@@ -1,0 +1,14 @@
+- generic [ref=e51]:
+  - generic [ref=e53]:
+    - button "返回" [ref=e54] [cursor=pointer]:
+      - img [ref=e55]
+    - generic [ref=e57]:
+      - heading "广州程序员年薪40万，买房还是租房？" [level=1] [ref=e58]
+      - paragraph [ref=e59]: 正在生成视角...
+  - generic [ref=e62]:
+    - generic [ref=e64]: 00:15
+    - generic [ref=e66]: 📋 正在生成分析视角...
+  - generic [ref=e68]:
+    - textbox "参与讨论..." [ref=e70]
+    - button "发送" [disabled] [ref=e71]
+  - button "结束辩论" [ref=e73] [cursor=pointer]

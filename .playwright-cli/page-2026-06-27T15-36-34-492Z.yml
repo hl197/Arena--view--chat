@@ -1,0 +1,848 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - link "Skip to content" [ref=e4] [cursor=pointer]:
+        - /url: "#start-of-content"
+      - banner [ref=e6]:
+        - heading "Navigation Menu" [level=2] [ref=e7]
+        - generic [ref=e8]:
+          - link "Homepage" [ref=e10] [cursor=pointer]:
+            - /url: /
+            - img [ref=e11]
+          - generic [ref=e13]:
+            - navigation "Global" [ref=e16]:
+              - list [ref=e17]:
+                - listitem [ref=e18]:
+                  - button "Platform" [ref=e20] [cursor=pointer]:
+                    - text: Platform
+                    - img [ref=e21]
+                - listitem [ref=e23]:
+                  - button "Solutions" [ref=e25] [cursor=pointer]:
+                    - text: Solutions
+                    - img [ref=e26]
+                - listitem [ref=e28]:
+                  - button "Resources" [ref=e30] [cursor=pointer]:
+                    - text: Resources
+                    - img [ref=e31]
+                - listitem [ref=e33]:
+                  - button "Open Source" [ref=e35] [cursor=pointer]:
+                    - text: Open Source
+                    - img [ref=e36]
+                - listitem [ref=e38]:
+                  - button "Enterprise" [ref=e40] [cursor=pointer]:
+                    - text: Enterprise
+                    - img [ref=e41]
+                - listitem [ref=e43]:
+                  - link "Pricing" [ref=e44] [cursor=pointer]:
+                    - /url: https://github.com/pricing
+                    - generic [ref=e45]: Pricing
+            - generic [ref=e46]:
+              - button "Search or jump to…" [ref=e49] [cursor=pointer]:
+                - img [ref=e51]
+              - link "Sign in" [ref=e54] [cursor=pointer]:
+                - /url: /login?return_to=https%3A%2F%2Fgithub.com%2Fdatawhalechina%2Fhello-agents%2Ftree%2Fmain%2Fcode%2Fchapter6%2FAgentScopeDemo
+              - link "Sign up" [ref=e55] [cursor=pointer]:
+                - /url: /signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E%2Ffiles%2Fdisambiguate&source=header-repo&source_repo=datawhalechina%2Fhello-agents
+              - button "Appearance settings" [ref=e58] [cursor=pointer]:
+                - img
+    - main [ref=e62]:
+      - generic [ref=e63]:
+        - generic [ref=e64]:
+          - generic [ref=e66]:
+            - img [ref=e67]
+            - link "datawhalechina" [ref=e70] [cursor=pointer]:
+              - /url: /datawhalechina
+            - generic [ref=e71]: /
+            - strong [ref=e72]:
+              - link "hello-agents" [ref=e73] [cursor=pointer]:
+                - /url: /datawhalechina/hello-agents
+            - generic [ref=e74]: Public
+          - generic [ref=e75]:
+            - list:
+              - listitem [ref=e76]:
+                - link "You must be signed in to change notification settings" [ref=e77] [cursor=pointer]:
+                  - /url: /login?return_to=%2Fdatawhalechina%2Fhello-agents
+                  - img [ref=e78]
+                  - text: Notifications
+              - listitem [ref=e80]:
+                - link "Fork 7.7k" [ref=e81] [cursor=pointer]:
+                  - /url: /login?return_to=%2Fdatawhalechina%2Fhello-agents
+                  - img [ref=e82]
+                  - text: Fork
+                  - generic "7,695" [ref=e84]: 7.7k
+              - listitem [ref=e85]:
+                - link "You must be signed in to star a repository" [ref=e87] [cursor=pointer]:
+                  - /url: /login?return_to=%2Fdatawhalechina%2Fhello-agents
+                  - img [ref=e88]
+                  - text: Star
+                  - generic "62229 users starred this repository" [ref=e90]: 62.2k
+        - navigation "Repository" [ref=e91]:
+          - list [ref=e92]:
+            - listitem [ref=e93]:
+              - link "Code" [ref=e94] [cursor=pointer]:
+                - /url: /datawhalechina/hello-agents
+                - img [ref=e95]
+                - generic [ref=e97]: Code
+            - listitem [ref=e98]:
+              - link "Issues 69" [ref=e99] [cursor=pointer]:
+                - /url: /datawhalechina/hello-agents/issues
+                - img [ref=e100]
+                - generic [ref=e103]: Issues
+                - generic "69" [ref=e104]
+            - listitem [ref=e105]:
+              - link "Pull requests 77" [ref=e106] [cursor=pointer]:
+                - /url: /datawhalechina/hello-agents/pulls
+                - img [ref=e107]
+                - generic [ref=e109]: Pull requests
+                - generic "77" [ref=e110]
+            - listitem [ref=e111]:
+              - link "Discussions" [ref=e112] [cursor=pointer]:
+                - /url: /datawhalechina/hello-agents/discussions
+                - img [ref=e113]
+                - generic [ref=e115]: Discussions
+            - listitem [ref=e116]:
+              - link "Actions" [ref=e117] [cursor=pointer]:
+                - /url: /datawhalechina/hello-agents/actions
+                - img [ref=e118]
+                - generic [ref=e120]: Actions
+            - listitem [ref=e121]:
+              - link "Projects" [ref=e122] [cursor=pointer]:
+                - /url: /datawhalechina/hello-agents/projects
+                - img [ref=e123]
+                - generic [ref=e125]: Projects
+            - listitem [ref=e126]:
+              - link "Security and quality" [ref=e127] [cursor=pointer]:
+                - /url: /datawhalechina/hello-agents/security
+                - img [ref=e128]
+                - generic [ref=e130]: Security and quality
+            - listitem [ref=e131]:
+              - link "Insights" [ref=e132] [cursor=pointer]:
+                - /url: /datawhalechina/hello-agents/pulse
+                - img [ref=e133]
+                - generic [ref=e135]: Insights
+      - generic [ref=e143]:
+        - generic [ref=e145]:
+          - generic [ref=e148]:
+            - generic [ref=e149]:
+              - generic [ref=e150]:
+                - heading "Collapse file tree" [level=2] [ref=e151]:
+                  - button "Collapse file tree" [expanded] [ref=e152] [cursor=pointer]:
+                    - img [ref=e153]
+                - heading "Files" [level=2] [ref=e156]
+              - generic [ref=e157]:
+                - button "main branch" [ref=e159] [cursor=pointer]:
+                  - generic [ref=e160]:
+                    - generic [ref=e162]:
+                      - img [ref=e164]
+                      - generic [ref=e167]: main
+                    - generic:
+                      - img
+                - button "Search this repository (forward slash)" [ref=e169] [cursor=pointer]:
+                  - img [ref=e170]
+            - generic [ref=e173]:
+              - img [ref=e175]
+              - combobox "Go to file" [ref=e177]
+            - navigation "File Tree Navigation" [ref=e183]:
+              - tree "Files" [ref=e185]:
+                - treeitem ".github" [level=1] [ref=e186]:
+                  - generic [ref=e187] [cursor=pointer]:
+                    - img [ref=e189]
+                    - generic [ref=e191]:
+                      - img [ref=e195]
+                      - generic [ref=e197]: .github
+                - treeitem "Additional-Chapter" [level=1] [ref=e198]:
+                  - generic [ref=e199] [cursor=pointer]:
+                    - img [ref=e201]
+                    - generic [ref=e203]:
+                      - img [ref=e207]
+                      - generic [ref=e209]: Additional-Chapter
+                - treeitem "Co-creation-projects" [level=1] [ref=e210]:
+                  - generic [ref=e211] [cursor=pointer]:
+                    - img [ref=e213]
+                    - generic [ref=e215]:
+                      - img [ref=e219]
+                      - generic [ref=e221]: Co-creation-projects
+                - treeitem "Extra-Chapter" [level=1] [ref=e222]:
+                  - generic [ref=e223] [cursor=pointer]:
+                    - img [ref=e225]
+                    - generic [ref=e227]:
+                      - img [ref=e231]
+                      - generic [ref=e233]: Extra-Chapter
+                - treeitem "code" [expanded] [level=1] [ref=e234]:
+                  - generic [ref=e235] [cursor=pointer]:
+                    - img [ref=e237]
+                    - generic [ref=e239]:
+                      - img [ref=e243]
+                      - generic [ref=e245]: code
+                  - group "code" [ref=e246]:
+                    - treeitem "chapter1" [level=2] [ref=e247]:
+                      - generic [ref=e248] [cursor=pointer]:
+                        - img [ref=e253]
+                        - generic [ref=e255]:
+                          - img [ref=e259]
+                          - generic [ref=e261]: chapter1
+                    - treeitem "chapter10" [level=2] [ref=e262]:
+                      - generic [ref=e263] [cursor=pointer]:
+                        - img [ref=e268]
+                        - generic [ref=e270]:
+                          - img [ref=e274]
+                          - generic [ref=e276]: chapter10
+                    - treeitem "chapter11" [level=2] [ref=e277]:
+                      - generic [ref=e278] [cursor=pointer]:
+                        - img [ref=e283]
+                        - generic [ref=e285]:
+                          - img [ref=e289]
+                          - generic [ref=e291]: chapter11
+                    - treeitem "chapter12" [level=2] [ref=e292]:
+                      - generic [ref=e293] [cursor=pointer]:
+                        - img [ref=e298]
+                        - generic [ref=e300]:
+                          - img [ref=e304]
+                          - generic [ref=e306]: chapter12
+                    - treeitem "chapter13" [level=2] [ref=e307]:
+                      - generic [ref=e308] [cursor=pointer]:
+                        - img [ref=e313]
+                        - generic [ref=e315]:
+                          - img [ref=e319]
+                          - generic [ref=e321]: chapter13
+                    - treeitem "chapter14" [level=2] [ref=e322]:
+                      - generic [ref=e323] [cursor=pointer]:
+                        - img [ref=e328]
+                        - generic [ref=e330]:
+                          - img [ref=e334]
+                          - generic [ref=e336]: chapter14
+                    - treeitem "chapter15" [level=2] [ref=e337]:
+                      - generic [ref=e338] [cursor=pointer]:
+                        - img [ref=e343]
+                        - generic [ref=e345]:
+                          - img [ref=e349]
+                          - generic [ref=e351]: chapter15
+                    - treeitem "chapter16" [level=2] [ref=e352]:
+                      - generic [ref=e353] [cursor=pointer]:
+                        - img [ref=e358]
+                        - generic [ref=e360]:
+                          - img [ref=e364]
+                          - generic [ref=e366]: chapter16
+                    - treeitem "chapter2" [level=2] [ref=e367]:
+                      - generic [ref=e368] [cursor=pointer]:
+                        - img [ref=e373]
+                        - generic [ref=e375]:
+                          - img [ref=e379]
+                          - generic [ref=e381]: chapter2
+                    - treeitem "chapter3" [level=2] [ref=e382]:
+                      - generic [ref=e383] [cursor=pointer]:
+                        - img [ref=e388]
+                        - generic [ref=e390]:
+                          - img [ref=e394]
+                          - generic [ref=e396]: chapter3
+                    - treeitem "chapter4" [level=2] [ref=e397]:
+                      - generic [ref=e398] [cursor=pointer]:
+                        - img [ref=e403]
+                        - generic [ref=e405]:
+                          - img [ref=e409]
+                          - generic [ref=e411]: chapter4
+                    - treeitem "chapter5" [level=2] [ref=e412]:
+                      - generic [ref=e413] [cursor=pointer]:
+                        - img [ref=e418]
+                        - generic [ref=e420]:
+                          - img [ref=e424]
+                          - generic [ref=e426]: chapter5
+                    - treeitem "chapter6" [expanded] [level=2] [ref=e427]:
+                      - generic [ref=e428] [cursor=pointer]:
+                        - img [ref=e433]
+                        - generic [ref=e435]:
+                          - img [ref=e439]
+                          - generic [ref=e441]: chapter6
+                      - group "chapter6" [ref=e442]:
+                        - treeitem "AgentScopeDemo" [expanded] [level=3] [ref=e443]:
+                          - generic [ref=e444] [cursor=pointer]:
+                            - img [ref=e450]
+                            - generic [ref=e452]:
+                              - img [ref=e456]
+                              - generic [ref=e458]: AgentScopeDemo
+                          - group "AgentScopeDemo" [ref=e459]:
+                            - treeitem "README.md" [level=4] [ref=e460]:
+                              - generic [ref=e467] [cursor=pointer]:
+                                - img [ref=e470]
+                                - generic [ref=e472]: README.md
+                            - treeitem "game_roles.py" [level=4] [ref=e473]:
+                              - generic [ref=e480] [cursor=pointer]:
+                                - img [ref=e483]
+                                - generic [ref=e485]: game_roles.py
+                            - treeitem "main_cn.py" [level=4] [ref=e486]:
+                              - generic [ref=e493] [cursor=pointer]:
+                                - img [ref=e496]
+                                - generic [ref=e498]: main_cn.py
+                            - treeitem "prompt_cn.py" [level=4] [ref=e499]:
+                              - generic [ref=e506] [cursor=pointer]:
+                                - img [ref=e509]
+                                - generic [ref=e511]: prompt_cn.py
+                            - treeitem "requirements.txt" [level=4] [ref=e512]:
+                              - generic [ref=e519] [cursor=pointer]:
+                                - img [ref=e522]
+                                - generic [ref=e524]: requirements.txt
+                            - treeitem "structured_output_cn.py" [level=4] [ref=e525]:
+                              - generic [ref=e532] [cursor=pointer]:
+                                - img [ref=e535]
+                                - generic [ref=e537]: structured_output_cn.py
+                            - treeitem "utils_cn.py" [level=4] [ref=e538]:
+                              - generic [ref=e545] [cursor=pointer]:
+                                - img [ref=e548]
+                                - generic [ref=e550]: utils_cn.py
+                        - treeitem "AutoGenDemo" [level=3] [ref=e551]:
+                          - generic [ref=e552] [cursor=pointer]:
+                            - img [ref=e558]
+                            - generic [ref=e560]:
+                              - img [ref=e564]
+                              - generic [ref=e566]: AutoGenDemo
+                        - treeitem "CAMEL" [level=3] [ref=e567]:
+                          - generic [ref=e568] [cursor=pointer]:
+                            - img [ref=e574]
+                            - generic [ref=e576]:
+                              - img [ref=e580]
+                              - generic [ref=e582]: CAMEL
+                        - treeitem "Langgraph" [level=3] [ref=e583]:
+                          - generic [ref=e584] [cursor=pointer]:
+                            - img [ref=e590]
+                            - generic [ref=e592]:
+                              - img [ref=e596]
+                              - generic [ref=e598]: Langgraph
+                    - treeitem "chapter7" [level=2] [ref=e599]:
+                      - generic [ref=e600] [cursor=pointer]:
+                        - img [ref=e605]
+                        - generic [ref=e607]:
+                          - img [ref=e611]
+                          - generic [ref=e613]: chapter7
+                    - treeitem "chapter8" [level=2] [ref=e614]:
+                      - generic [ref=e615] [cursor=pointer]:
+                        - img [ref=e620]
+                        - generic [ref=e622]:
+                          - img [ref=e626]
+                          - generic [ref=e628]: chapter8
+                    - treeitem "chapter9" [level=2] [ref=e629]:
+                      - generic [ref=e630] [cursor=pointer]:
+                        - img [ref=e635]
+                        - generic [ref=e637]:
+                          - img [ref=e641]
+                          - generic [ref=e643]: chapter9
+                - treeitem "docs" [level=1] [ref=e644]:
+                  - generic [ref=e645] [cursor=pointer]:
+                    - img [ref=e647]
+                    - generic [ref=e649]:
+                      - img [ref=e653]
+                      - generic [ref=e655]: docs
+                - treeitem ".gitignore" [level=1] [ref=e656]:
+                  - generic [ref=e658] [cursor=pointer]:
+                    - img [ref=e661]
+                    - generic [ref=e663]: .gitignore
+                - treeitem "LICENSE.txt" [level=1] [ref=e664]:
+                  - generic [ref=e666] [cursor=pointer]:
+                    - img [ref=e669]
+                    - generic [ref=e671]: LICENSE.txt
+                - treeitem "README.md" [level=1] [ref=e672]:
+                  - generic [ref=e674] [cursor=pointer]:
+                    - img [ref=e677]
+                    - generic [ref=e679]: README.md
+                - treeitem "README_EN.md" [level=1] [ref=e680]:
+                  - generic [ref=e682] [cursor=pointer]:
+                    - img [ref=e685]
+                    - generic [ref=e687]: README_EN.md
+                - treeitem "fix_bold_format.py" [level=1] [ref=e688]:
+                  - generic [ref=e690] [cursor=pointer]:
+                    - img [ref=e693]
+                    - generic [ref=e695]: fix_bold_format.py
+                - treeitem "读者反馈问卷.png" [level=1] [ref=e696]:
+                  - generic [ref=e698] [cursor=pointer]:
+                    - img [ref=e701]
+                    - generic [ref=e703]: 读者反馈问卷.png
+                - treeitem "读者群二维码.png" [level=1] [ref=e704]:
+                  - generic [ref=e706] [cursor=pointer]:
+                    - img [ref=e709]
+                    - generic [ref=e711]: 读者群二维码.png
+          - slider "Draggable pane splitter" [ref=e713]
+        - generic [ref=e716]:
+          - generic [ref=e720]:
+            - generic [ref=e722]:
+              - navigation "Breadcrumbs" [ref=e723]:
+                - heading "Breadcrumbs" [level=2] [ref=e724]
+                - list [ref=e725]:
+                  - listitem [ref=e726]:
+                    - link "hello-agents" [ref=e727] [cursor=pointer]:
+                      - /url: /datawhalechina/hello-agents/tree/main
+                  - listitem [ref=e728]:
+                    - text: /
+                    - link "code" [ref=e729] [cursor=pointer]:
+                      - /url: /datawhalechina/hello-agents/tree/main/code
+                  - listitem [ref=e730]:
+                    - text: /
+                    - link "chapter6" [ref=e731] [cursor=pointer]:
+                      - /url: /datawhalechina/hello-agents/tree/main/code/chapter6
+              - generic [ref=e732]:
+                - text: /
+                - heading "AgentScopeDemo" [level=1] [ref=e733]
+                - text: /
+              - button "Copy path" [ref=e734] [cursor=pointer]:
+                - img [ref=e735]
+            - generic [ref=e740]:
+              - heading "Directory actions" [level=2] [ref=e741]
+              - heading "More options" [level=2] [ref=e742]
+              - button "More options" [ref=e743] [cursor=pointer]:
+                - img [ref=e744]
+          - generic [ref=e746]:
+            - generic [ref=e748]:
+              - heading "Latest commit" [level=2] [ref=e749]
+              - generic [ref=e752]:
+                - heading "History" [level=2] [ref=e753]
+                - link "History" [ref=e754] [cursor=pointer]:
+                  - /url: /datawhalechina/hello-agents/commits/main/code/chapter6/AgentScopeDemo
+                  - generic [ref=e755]:
+                    - generic:
+                      - img
+                    - generic [ref=e756]: History
+            - generic [ref=e757]:
+              - generic [ref=e758]:
+                - heading "Folders and files" [level=2] [ref=e759]
+                - table "Folders and files" [ref=e760]:
+                  - rowgroup [ref=e761]:
+                    - row "Name Last commit message Last commit date" [ref=e762]:
+                      - columnheader "Name" [ref=e763]
+                      - columnheader "Last commit message" [ref=e764]:
+                        - generic "Last commit message" [ref=e765]
+                      - columnheader "Last commit date" [ref=e766]:
+                        - generic "Last commit date" [ref=e767]
+                  - rowgroup [ref=e768]:
+                    - row "parent directory Parent directory" [ref=e769]:
+                      - cell "parent directory Parent directory" [ref=e770]:
+                        - heading "parent directory" [level=3] [ref=e771]
+                        - link "Parent directory" [ref=e772] [cursor=pointer]:
+                          - /url: /datawhalechina/hello-agents/tree/main/code/chapter6
+                          - generic [ref=e773]:
+                            - img [ref=e774]
+                            - text: ..
+                    - row "README.md, (File)" [ref=e776]:
+                      - cell "README.md, (File)" [ref=e777]:
+                        - generic [ref=e778]:
+                          - img [ref=e779]
+                          - link "README.md, (File)" [ref=e784] [cursor=pointer]:
+                            - /url: /datawhalechina/hello-agents/blob/main/code/chapter6/AgentScopeDemo/README.md
+                            - text: README.md
+                      - cell [ref=e785]
+                      - cell [ref=e787]
+                    - row "game_roles.py, (File)" [ref=e790]:
+                      - cell "game_roles.py, (File)" [ref=e791]:
+                        - generic [ref=e792]:
+                          - img [ref=e793]
+                          - link "game_roles.py, (File)" [ref=e798] [cursor=pointer]:
+                            - /url: /datawhalechina/hello-agents/blob/main/code/chapter6/AgentScopeDemo/game_roles.py
+                            - text: game_roles.py
+                      - cell [ref=e799]
+                      - cell [ref=e801]
+                    - row "main_cn.py, (File)" [ref=e804]:
+                      - cell "main_cn.py, (File)" [ref=e805]:
+                        - generic [ref=e806]:
+                          - img [ref=e807]
+                          - link "main_cn.py, (File)" [ref=e812] [cursor=pointer]:
+                            - /url: /datawhalechina/hello-agents/blob/main/code/chapter6/AgentScopeDemo/main_cn.py
+                            - text: main_cn.py
+                      - cell [ref=e813]
+                      - cell [ref=e815]
+                    - row "prompt_cn.py, (File)" [ref=e818]:
+                      - cell "prompt_cn.py, (File)" [ref=e819]:
+                        - generic [ref=e820]:
+                          - img [ref=e821]
+                          - link "prompt_cn.py, (File)" [ref=e826] [cursor=pointer]:
+                            - /url: /datawhalechina/hello-agents/blob/main/code/chapter6/AgentScopeDemo/prompt_cn.py
+                            - text: prompt_cn.py
+                      - cell [ref=e827]
+                      - cell [ref=e829]
+                    - row "requirements.txt, (File)" [ref=e832]:
+                      - cell "requirements.txt, (File)" [ref=e833]:
+                        - generic [ref=e834]:
+                          - img [ref=e835]
+                          - link "requirements.txt, (File)" [ref=e840] [cursor=pointer]:
+                            - /url: /datawhalechina/hello-agents/blob/main/code/chapter6/AgentScopeDemo/requirements.txt
+                            - text: requirements.txt
+                      - cell [ref=e841]
+                      - cell [ref=e843]
+                    - row "structured_output_cn.py, (File)" [ref=e846]:
+                      - cell "structured_output_cn.py, (File)" [ref=e847]:
+                        - generic [ref=e848]:
+                          - img [ref=e849]
+                          - link "structured_output_cn.py, (File)" [ref=e854] [cursor=pointer]:
+                            - /url: /datawhalechina/hello-agents/blob/main/code/chapter6/AgentScopeDemo/structured_output_cn.py
+                            - text: structured_output_cn.py
+                      - cell [ref=e855]
+                      - cell [ref=e857]
+                    - row "utils_cn.py, (File)" [ref=e860]:
+                      - cell "utils_cn.py, (File)" [ref=e861]:
+                        - generic [ref=e862]:
+                          - img [ref=e863]
+                          - link "utils_cn.py, (File)" [ref=e868] [cursor=pointer]:
+                            - /url: /datawhalechina/hello-agents/blob/main/code/chapter6/AgentScopeDemo/utils_cn.py
+                            - text: utils_cn.py
+                      - cell [ref=e869]
+                      - cell [ref=e871]
+              - generic [ref=e875]:
+                - generic [ref=e876]:
+                  - heading "README.md" [level=2] [ref=e877]:
+                    - link "README.md" [ref=e878] [cursor=pointer]:
+                      - /url: "#readme"
+                  - button "Outline" [ref=e879] [cursor=pointer]:
+                    - img [ref=e880]
+                - article [ref=e883]:
+                  - generic [ref=e884]:
+                    - heading "AgentScope 三国狼人杀案例" [level=1] [ref=e885]
+                    - 'link "Permalink: AgentScope 三国狼人杀案例" [ref=e886] [cursor=pointer]':
+                      - /url: "#agentscope-三国狼人杀案例"
+                      - img [ref=e887]
+                  - paragraph [ref=e889]: 本目录包含第六章 AgentScope 框架的完整实战案例，展示了如何使用 AgentScope 构建一个融合中国古典文化元素的多智能体在线游戏。
+                  - generic [ref=e890]:
+                    - heading "📁 文件说明" [level=2] [ref=e891]
+                    - 'link "Permalink: 📁 文件说明" [ref=e892] [cursor=pointer]':
+                      - /url: "#-文件说明"
+                      - img [ref=e893]
+                  - list [ref=e895]:
+                    - listitem [ref=e896]:
+                      - code [ref=e897]: main_cn.py
+                      - text: "- 主要游戏逻辑和控制器"
+                    - listitem [ref=e898]:
+                      - code [ref=e899]: prompt_cn.py
+                      - text: "- 中文提示词管理"
+                    - listitem [ref=e900]:
+                      - code [ref=e901]: game_roles.py
+                      - text: "- 游戏角色定义和配置"
+                    - listitem [ref=e902]:
+                      - code [ref=e903]: structured_output_cn.py
+                      - text: "- 结构化输出模型定义"
+                    - listitem [ref=e904]:
+                      - code [ref=e905]: utils_cn.py
+                      - text: "- 游戏工具函数和辅助方法"
+                    - listitem [ref=e906]:
+                      - code [ref=e907]: README.md
+                      - text: "- 本说明文档"
+                  - generic [ref=e908]:
+                    - heading "🎮 案例特点" [level=2] [ref=e909]
+                    - 'link "Permalink: 🎮 案例特点" [ref=e910] [cursor=pointer]':
+                      - /url: "#-案例特点"
+                      - img [ref=e911]
+                  - list [ref=e913]:
+                    - listitem [ref=e914]:
+                      - strong [ref=e915]: 消息驱动架构
+                      - text: ：展示 AgentScope 的核心消息传递机制
+                    - listitem [ref=e916]:
+                      - strong [ref=e917]: 并发协作
+                      - text: ：演示多智能体同时在线的实时交互
+                    - listitem [ref=e918]:
+                      - strong [ref=e919]: 角色扮演
+                      - text: ：每个智能体具备双重身份（游戏角色+三国人物）
+                    - listitem [ref=e920]:
+                      - strong [ref=e921]: 结构化输出
+                      - text: ：通过 Pydantic 模型约束智能体行为
+                    - listitem [ref=e922]:
+                      - strong [ref=e923]: 容错机制
+                      - text: ：单个智能体异常不影响整体游戏流程
+                  - generic [ref=e924]:
+                    - heading "🛠️ 环境准备" [level=2] [ref=e925]
+                    - 'link "Permalink: 🛠️ 环境准备" [ref=e926] [cursor=pointer]':
+                      - /url: "#️-环境准备"
+                      - img [ref=e927]
+                  - generic [ref=e929]:
+                    - heading "1. 安装依赖" [level=3] [ref=e930]
+                    - 'link "Permalink: 1. 安装依赖" [ref=e931] [cursor=pointer]':
+                      - /url: "#1-安装依赖"
+                      - img [ref=e932]
+                  - generic [ref=e934]:
+                    - generic [ref=e935]: pip install agentscope pip install dashscope pip install pydantic
+                    - button "Copy code to clipboard" [ref=e937] [cursor=pointer]:
+                      - img [ref=e938]
+                  - generic [ref=e941]:
+                    - heading "2. 配置环境变量" [level=3] [ref=e942]
+                    - 'link "Permalink: 2. 配置环境变量" [ref=e943] [cursor=pointer]':
+                      - /url: "#2-配置环境变量"
+                      - img [ref=e944]
+                  - paragraph [ref=e946]: 设置阿里云 DashScope API Key：
+                  - generic [ref=e947]:
+                    - generic [ref=e948]:
+                      - generic [ref=e949]: "# Linux/Mac"
+                      - text: export DASHSCOPE_API_KEY=
+                      - generic [ref=e950]: "\"your-api-key-here\""
+                      - generic [ref=e951]: "# Windows PowerShell"
+                      - text: $env:DASHSCOPE_API_KEY=
+                      - generic [ref=e952]: "\"your-api-key-here\""
+                      - generic [ref=e953]: "# Windows CMD"
+                      - text: set DASHSCOPE_API_KEY=your-api-key-here
+                    - button "Copy code to clipboard" [ref=e955] [cursor=pointer]:
+                      - img [ref=e956]
+                  - paragraph [ref=e959]:
+                    - text: 获取 API Key：
+                    - link "https://dashscope.console.aliyun.com/apiKey" [ref=e960] [cursor=pointer]:
+                      - /url: https://dashscope.console.aliyun.com/apiKey
+                  - generic [ref=e961]:
+                    - heading "3. 运行游戏" [level=3] [ref=e962]
+                    - 'link "Permalink: 3. 运行游戏" [ref=e963] [cursor=pointer]':
+                      - /url: "#3-运行游戏"
+                      - img [ref=e964]
+                  - generic [ref=e966]:
+                    - generic [ref=e967]: python main_cn.py
+                    - button "Copy code to clipboard" [ref=e969] [cursor=pointer]:
+                      - img [ref=e970]
+                  - generic [ref=e973]:
+                    - heading "🎭 游戏角色说明" [level=2] [ref=e974]
+                    - 'link "Permalink: 🎭 游戏角色说明" [ref=e975] [cursor=pointer]':
+                      - /url: "#-游戏角色说明"
+                      - img [ref=e976]
+                  - generic [ref=e978]:
+                    - heading "游戏角色" [level=3] [ref=e979]
+                    - 'link "Permalink: 游戏角色" [ref=e980] [cursor=pointer]':
+                      - /url: "#游戏角色"
+                      - img [ref=e981]
+                  - list [ref=e983]:
+                    - listitem [ref=e984]:
+                      - strong [ref=e985]: 狼人
+                      - text: ：夜晚击杀好人，白天隐藏身份
+                    - listitem [ref=e986]:
+                      - strong [ref=e987]: 预言家
+                      - text: ：每晚查验一名玩家身份
+                    - listitem [ref=e988]:
+                      - strong [ref=e989]: 女巫
+                      - text: ：拥有解药和毒药各一瓶
+                    - listitem [ref=e990]:
+                      - strong [ref=e991]: 猎人
+                      - text: ：被投票出局时可开枪带走一名玩家
+                    - listitem [ref=e992]:
+                      - strong [ref=e993]: 村民
+                      - text: ：通过推理和投票找出狼人
+                  - generic [ref=e994]:
+                    - heading "三国人物" [level=3] [ref=e995]
+                    - 'link "Permalink: 三国人物" [ref=e996] [cursor=pointer]':
+                      - /url: "#三国人物"
+                      - img [ref=e997]
+                  - list [ref=e999]:
+                    - listitem [ref=e1000]:
+                      - strong [ref=e1001]: 刘备
+                      - text: ：仁德宽厚，善于团结众人
+                    - listitem [ref=e1002]:
+                      - strong [ref=e1003]: 关羽
+                      - text: ：忠义刚烈，言辞直接
+                    - listitem [ref=e1004]:
+                      - strong [ref=e1005]: 张飞
+                      - text: ：性格豪爽，容易冲动
+                    - listitem [ref=e1006]:
+                      - strong [ref=e1007]: 诸葛亮
+                      - text: ：智慧超群，分析透彻
+                    - listitem [ref=e1008]:
+                      - strong [ref=e1009]: 曹操
+                      - text: ：雄才大略，善于权谋
+                    - listitem [ref=e1010]:
+                      - strong [ref=e1011]: 司马懿
+                      - text: ：深谋远虑，城府极深
+                  - generic [ref=e1012]:
+                    - heading "🏗️ 架构设计" [level=2] [ref=e1013]
+                    - 'link "Permalink: 🏗️ 架构设计" [ref=e1014] [cursor=pointer]':
+                      - /url: "#️-架构设计"
+                      - img [ref=e1015]
+                  - generic [ref=e1017]:
+                    - heading "分层架构" [level=3] [ref=e1018]
+                    - 'link "Permalink: 分层架构" [ref=e1019] [cursor=pointer]':
+                      - /url: "#分层架构"
+                      - img [ref=e1020]
+                  - generic [ref=e1022]:
+                    - code [ref=e1024]: 游戏控制层 (ThreeKingdomsWerewolfGame) ├── 游戏状态管理 ├── 流程控制 └── 胜负判定 智能体交互层 (MsgHub) ├── 消息路由 ├── 并发处理 └── 状态同步 角色建模层 (DialogAgent) ├── 角色提示词 ├── 结构化输出 └── 行为约束
+                    - button "Copy code to clipboard" [ref=e1026] [cursor=pointer]:
+                      - img [ref=e1027]
+                  - generic [ref=e1030]:
+                    - heading "核心组件" [level=3] [ref=e1031]
+                    - 'link "Permalink: 核心组件" [ref=e1032] [cursor=pointer]':
+                      - /url: "#核心组件"
+                      - img [ref=e1033]
+                  - paragraph [ref=e1035]:
+                    - strong [ref=e1036]: 1. 消息中心 (MsgHub)
+                  - generic [ref=e1037]:
+                    - generic [ref=e1038]: "async with MsgHub( participants=self.werewolves, enable_auto_broadcast=True ) as hub: # 狼人夜晚讨论 for wolf in self.werewolves: await wolf(structured_model=DiscussionModelCN)"
+                    - button "Copy code to clipboard" [ref=e1040] [cursor=pointer]:
+                      - img [ref=e1041]
+                  - paragraph [ref=e1044]:
+                    - strong [ref=e1045]: 2. 结构化输出
+                  - generic [ref=e1046]:
+                    - generic [ref=e1047]: "class VoteModelCN(BaseModel): vote: str = Field(description=\"投票目标玩家姓名\") reason: str = Field(description=\"投票理由\") confidence: int = Field(ge=1, le=10, description=\"信心程度\")"
+                    - button "Copy code to clipboard" [ref=e1049] [cursor=pointer]:
+                      - img [ref=e1050]
+                  - paragraph [ref=e1053]:
+                    - strong [ref=e1054]: 3. 并发管道
+                  - generic [ref=e1055]:
+                    - generic [ref=e1056]: vote_msgs = await fanout_pipeline( self.alive_players, msg=vote_announcement, structured_model=get_vote_model_cn(self.alive_players), enable_gather=False, )
+                    - button "Copy code to clipboard" [ref=e1058] [cursor=pointer]:
+                      - img [ref=e1059]
+                  - generic [ref=e1062]:
+                    - heading "🎯 游戏流程" [level=2] [ref=e1063]
+                    - 'link "Permalink: 🎯 游戏流程" [ref=e1064] [cursor=pointer]':
+                      - /url: "#-游戏流程"
+                      - img [ref=e1065]
+                  - generic [ref=e1067]:
+                    - heading "夜晚阶段" [level=3] [ref=e1068]
+                    - 'link "Permalink: 夜晚阶段" [ref=e1069] [cursor=pointer]':
+                      - /url: "#夜晚阶段"
+                      - img [ref=e1070]
+                  - list [ref=e1072]:
+                    - listitem [ref=e1073]:
+                      - strong [ref=e1074]: 狼人讨论
+                      - text: ：狼人通过 MsgHub 协商击杀目标
+                    - listitem [ref=e1075]:
+                      - strong [ref=e1076]: 预言家查验
+                      - text: ：预言家选择查验对象
+                    - listitem [ref=e1077]:
+                      - strong [ref=e1078]: 女巫行动
+                      - text: ：女巫决定是否使用解药/毒药
+                  - generic [ref=e1079]:
+                    - heading "白天阶段" [level=3] [ref=e1080]
+                    - 'link "Permalink: 白天阶段" [ref=e1081] [cursor=pointer]':
+                      - /url: "#白天阶段"
+                      - img [ref=e1082]
+                  - list [ref=e1084]:
+                    - listitem [ref=e1085]:
+                      - strong [ref=e1086]: 死亡公布
+                      - text: ：公布夜晚死亡玩家
+                    - listitem [ref=e1087]:
+                      - strong [ref=e1088]: 自由讨论
+                      - text: ：所有存活玩家参与讨论
+                    - listitem [ref=e1089]:
+                      - strong [ref=e1090]: 投票淘汰
+                      - text: ：投票选择淘汰对象
+                    - listitem [ref=e1091]:
+                      - strong [ref=e1092]: 猎人技能
+                      - text: ：被淘汰的猎人可开枪
+                  - generic [ref=e1093]:
+                    - heading "🔧 自定义配置" [level=2] [ref=e1094]
+                    - 'link "Permalink: 🔧 自定义配置" [ref=e1095] [cursor=pointer]':
+                      - /url: "#-自定义配置"
+                      - img [ref=e1096]
+                  - generic [ref=e1098]:
+                    - heading "修改游戏人数" [level=3] [ref=e1099]
+                    - 'link "Permalink: 修改游戏人数" [ref=e1100] [cursor=pointer]':
+                      - /url: "#修改游戏人数"
+                      - img [ref=e1101]
+                  - generic [ref=e1103]:
+                    - generic [ref=e1104]: "# 在 main_cn.py 中修改 await game.setup_game(player_count=8) # 支持 6-12 人"
+                    - button "Copy code to clipboard" [ref=e1106] [cursor=pointer]:
+                      - img [ref=e1107]
+                  - generic [ref=e1110]:
+                    - heading "添加新角色" [level=3] [ref=e1111]
+                    - 'link "Permalink: 添加新角色" [ref=e1112] [cursor=pointer]':
+                      - /url: "#添加新角色"
+                      - img [ref=e1113]
+                  - generic [ref=e1115]:
+                    - generic [ref=e1116]: "# 在 game_roles.py 中添加 ROLES[\"守护者\"] = { \"description\": \"守护者\", \"ability\": \"每晚可以守护一名玩家\", \"team\": \"好人阵营\" }"
+                    - button "Copy code to clipboard" [ref=e1118] [cursor=pointer]:
+                      - img [ref=e1119]
+                  - generic [ref=e1122]:
+                    - heading "自定义提示词" [level=3] [ref=e1123]
+                    - 'link "Permalink: 自定义提示词" [ref=e1124] [cursor=pointer]':
+                      - /url: "#自定义提示词"
+                      - img [ref=e1125]
+                  - generic [ref=e1127]:
+                    - generic [ref=e1128]: "# 在 prompt_cn.py 中修改 def get_role_prompt(role: str, character: str) -> str: # 自定义角色提示词逻辑 pass"
+                    - button "Copy code to clipboard" [ref=e1130] [cursor=pointer]:
+                      - img [ref=e1131]
+                  - generic [ref=e1134]:
+                    - heading "🐛 常见问题" [level=2] [ref=e1135]
+                    - 'link "Permalink: 🐛 常见问题" [ref=e1136] [cursor=pointer]':
+                      - /url: "#-常见问题"
+                      - img [ref=e1137]
+                  - generic [ref=e1139]:
+                    - 'heading "Q: 游戏无法启动？" [level=3] [ref=e1140]'
+                    - 'link "Permalink: Q: 游戏无法启动？" [ref=e1141] [cursor=pointer]':
+                      - /url: "#q-游戏无法启动"
+                      - img [ref=e1142]
+                  - paragraph [ref=e1144]: "A: 检查以下几点："
+                  - list [ref=e1145]:
+                    - listitem [ref=e1146]: 确认 DASHSCOPE_API_KEY 环境变量已设置
+                    - listitem [ref=e1147]: 验证 API Key 是否有效
+                    - listitem [ref=e1148]: 检查网络连接是否正常
+                  - generic [ref=e1149]:
+                    - 'heading "Q: 智能体输出格式错误？" [level=3] [ref=e1150]'
+                    - 'link "Permalink: Q: 智能体输出格式错误？" [ref=e1151] [cursor=pointer]':
+                      - /url: "#q-智能体输出格式错误"
+                      - img [ref=e1152]
+                  - paragraph [ref=e1154]: "A: 可能原因："
+                  - list [ref=e1155]:
+                    - listitem [ref=e1156]: 模型理解能力限制
+                    - listitem [ref=e1157]: 提示词设计不够清晰
+                    - listitem [ref=e1158]: 结构化输出约束过于复杂
+                  - generic [ref=e1159]:
+                    - 'heading "Q: 游戏流程卡住？" [level=3] [ref=e1160]'
+                    - 'link "Permalink: Q: 游戏流程卡住？" [ref=e1161] [cursor=pointer]':
+                      - /url: "#q-游戏流程卡住"
+                      - img [ref=e1162]
+                  - paragraph [ref=e1164]: "A: 建议："
+                  - list [ref=e1165]:
+                    - listitem [ref=e1166]: 检查 MsgHub 的消息传递
+                    - listitem [ref=e1167]: 验证并发管道的执行状态
+                    - listitem [ref=e1168]: 查看控制台错误日志
+                  - generic [ref=e1169]:
+                    - heading "📚 技术亮点" [level=2] [ref=e1170]
+                    - 'link "Permalink: 📚 技术亮点" [ref=e1171] [cursor=pointer]':
+                      - /url: "#-技术亮点"
+                      - img [ref=e1172]
+                  - generic [ref=e1174]:
+                    - heading "1. 消息驱动架构" [level=3] [ref=e1175]
+                    - 'link "Permalink: 1. 消息驱动架构" [ref=e1176] [cursor=pointer]':
+                      - /url: "#1-消息驱动架构"
+                      - img [ref=e1177]
+                  - list [ref=e1179]:
+                    - listitem [ref=e1180]: 智能体间完全通过消息交互
+                    - listitem [ref=e1181]: 支持异步并发处理
+                    - listitem [ref=e1182]: 天然的分布式能力
+                  - generic [ref=e1183]:
+                    - heading "2. 结构化输出约束" [level=3] [ref=e1184]
+                    - 'link "Permalink: 2. 结构化输出约束" [ref=e1185] [cursor=pointer]':
+                      - /url: "#2-结构化输出约束"
+                      - img [ref=e1186]
+                  - list [ref=e1188]:
+                    - listitem [ref=e1189]: 游戏规则转化为代码约束
+                    - listitem [ref=e1190]: 提升系统稳定性和可预测性
+                    - listitem [ref=e1191]: 便于调试和监控
+                  - generic [ref=e1192]:
+                    - heading "3. 双重角色建模" [level=3] [ref=e1193]
+                    - 'link "Permalink: 3. 双重角色建模" [ref=e1194] [cursor=pointer]':
+                      - /url: "#3-双重角色建模"
+                      - img [ref=e1195]
+                  - list [ref=e1197]:
+                    - listitem [ref=e1198]: 游戏角色 + 三国人物的创新设计
+                    - listitem [ref=e1199]: 展现不同人格的策略差异
+                    - listitem [ref=e1200]: 增强游戏的趣味性和真实感
+                  - generic [ref=e1201]:
+                    - heading "🚀 扩展方向" [level=2] [ref=e1202]
+                    - 'link "Permalink: 🚀 扩展方向" [ref=e1203] [cursor=pointer]':
+                      - /url: "#-扩展方向"
+                      - img [ref=e1204]
+                  - list [ref=e1206]:
+                    - listitem [ref=e1207]:
+                      - strong [ref=e1208]: 增加游戏模式
+                      - text: ：支持更多狼人杀变体
+                    - listitem [ref=e1209]:
+                      - strong [ref=e1210]: 优化 AI 策略
+                      - text: ：提升智能体的游戏水平
+                    - listitem [ref=e1211]:
+                      - strong [ref=e1212]: 可视化界面
+                      - text: ：开发 Web 或桌面客户端
+                    - listitem [ref=e1213]:
+                      - strong [ref=e1214]: 实时观战
+                      - text: ：支持人类玩家观战和互动
+                    - listitem [ref=e1215]:
+                      - strong [ref=e1216]: 数据分析
+                      - text: ：统计游戏数据和智能体表现
+                  - generic [ref=e1217]:
+                    - heading "🤝 贡献指南" [level=2] [ref=e1218]
+                    - 'link "Permalink: 🤝 贡献指南" [ref=e1219] [cursor=pointer]':
+                      - /url: "#-贡献指南"
+                      - img [ref=e1220]
+                  - paragraph [ref=e1222]: 欢迎提交 Issue 和 Pull Request：
+                  - list [ref=e1223]:
+                    - listitem [ref=e1224]: 报告游戏 Bug 或异常
+                    - listitem [ref=e1225]: 提出新功能建议
+                    - listitem [ref=e1226]: 优化代码实现
+                    - listitem [ref=e1227]: 完善文档说明
+                  - separator [ref=e1228]
+                  - paragraph [ref=e1229]:
+                    - emphasis [ref=e1230]: 本案例是 Hello-Agents 教程第六章的核心实战项目，展示了 AgentScope 框架在构建复杂多智能体应用方面的强大能力。
+  - alert [ref=e1234]

@@ -1,0 +1,261 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - link "Skip to content" [ref=e4] [cursor=pointer]:
+      - /url: "#start-of-content"
+    - banner [ref=e6]:
+      - heading "Navigation Menu" [level=2] [ref=e7]
+      - generic [ref=e8]:
+        - link "Homepage" [ref=e10] [cursor=pointer]:
+          - /url: /
+          - img [ref=e11]
+        - generic [ref=e13]:
+          - navigation "Global" [ref=e16]:
+            - list [ref=e17]:
+              - listitem [ref=e18]:
+                - button "Platform" [ref=e20] [cursor=pointer]:
+                  - text: Platform
+                  - img [ref=e21]
+              - listitem [ref=e23]:
+                - button "Solutions" [ref=e25] [cursor=pointer]:
+                  - text: Solutions
+                  - img [ref=e26]
+              - listitem [ref=e28]:
+                - button "Resources" [ref=e30] [cursor=pointer]:
+                  - text: Resources
+                  - img [ref=e31]
+              - listitem [ref=e33]:
+                - button "Open Source" [ref=e35] [cursor=pointer]:
+                  - text: Open Source
+                  - img [ref=e36]
+              - listitem [ref=e38]:
+                - button "Enterprise" [ref=e40] [cursor=pointer]:
+                  - text: Enterprise
+                  - img [ref=e41]
+              - listitem [ref=e43]:
+                - link "Pricing" [ref=e44] [cursor=pointer]:
+                  - /url: https://github.com/pricing
+                  - generic [ref=e45]: Pricing
+          - generic [ref=e46]:
+            - button "Search or jump to…" [ref=e49] [cursor=pointer]:
+              - img [ref=e51]
+            - link "Sign in" [ref=e54] [cursor=pointer]:
+              - /url: /login?return_to=https%3A%2F%2Fgithub.com%2Fdatawhalechina%2Fhello-agents%2Ftree%2Fmain%2Fcode%2Fchapter6
+            - link "Sign up" [ref=e55] [cursor=pointer]:
+              - /url: /signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E%2Ffiles%2Fdisambiguate&source=header-repo&source_repo=datawhalechina%2Fhello-agents
+            - button "Appearance settings" [ref=e58] [cursor=pointer]:
+              - img
+  - main [ref=e62]:
+    - generic [ref=e63]:
+      - generic [ref=e64]:
+        - generic [ref=e66]:
+          - img [ref=e67]
+          - link "datawhalechina" [ref=e70] [cursor=pointer]:
+            - /url: /datawhalechina
+          - generic [ref=e71]: /
+          - strong [ref=e72]:
+            - link "hello-agents" [ref=e73] [cursor=pointer]:
+              - /url: /datawhalechina/hello-agents
+          - generic [ref=e74]: Public
+        - generic [ref=e75]:
+          - list:
+            - listitem [ref=e76]:
+              - link "You must be signed in to change notification settings" [ref=e77] [cursor=pointer]:
+                - /url: /login?return_to=%2Fdatawhalechina%2Fhello-agents
+                - img [ref=e78]
+                - text: Notifications
+            - listitem [ref=e80]:
+              - link "Fork 7.7k" [ref=e81] [cursor=pointer]:
+                - /url: /login?return_to=%2Fdatawhalechina%2Fhello-agents
+                - img [ref=e82]
+                - text: Fork
+                - generic "7,695" [ref=e84]: 7.7k
+            - listitem [ref=e85]:
+              - link "You must be signed in to star a repository" [ref=e87] [cursor=pointer]:
+                - /url: /login?return_to=%2Fdatawhalechina%2Fhello-agents
+                - img [ref=e88]
+                - text: Star
+                - generic "62229 users starred this repository" [ref=e90]: 62.2k
+      - navigation "Repository" [ref=e91]:
+        - list [ref=e92]:
+          - listitem [ref=e93]:
+            - link "Code" [ref=e94] [cursor=pointer]:
+              - /url: /datawhalechina/hello-agents
+              - img [ref=e95]
+              - generic [ref=e97]: Code
+          - listitem [ref=e98]:
+            - link "Issues 69" [ref=e99] [cursor=pointer]:
+              - /url: /datawhalechina/hello-agents/issues
+              - img [ref=e100]
+              - generic [ref=e103]: Issues
+              - generic "69" [ref=e104]
+          - listitem [ref=e105]:
+            - link "Pull requests 77" [ref=e106] [cursor=pointer]:
+              - /url: /datawhalechina/hello-agents/pulls
+              - img [ref=e107]
+              - generic [ref=e109]: Pull requests
+              - generic "77" [ref=e110]
+          - listitem [ref=e111]:
+            - link "Discussions" [ref=e112] [cursor=pointer]:
+              - /url: /datawhalechina/hello-agents/discussions
+              - img [ref=e113]
+              - generic [ref=e115]: Discussions
+          - listitem [ref=e116]:
+            - link "Actions" [ref=e117] [cursor=pointer]:
+              - /url: /datawhalechina/hello-agents/actions
+              - img [ref=e118]
+              - generic [ref=e120]: Actions
+          - listitem [ref=e121]:
+            - link "Projects" [ref=e122] [cursor=pointer]:
+              - /url: /datawhalechina/hello-agents/projects
+              - img [ref=e123]
+              - generic [ref=e125]: Projects
+          - listitem [ref=e126]:
+            - link "Security and quality" [ref=e127] [cursor=pointer]:
+              - /url: /datawhalechina/hello-agents/security
+              - img [ref=e128]
+              - generic [ref=e130]: Security and quality
+          - listitem [ref=e131]:
+            - link "Insights" [ref=e132] [cursor=pointer]:
+              - /url: /datawhalechina/hello-agents/pulse
+              - img [ref=e133]
+              - generic [ref=e135]: Insights
+    - generic [ref=e146]:
+      - generic [ref=e150]:
+        - generic [ref=e151]:
+          - heading "Expand file tree" [level=2] [ref=e153]:
+            - button "Expand file tree" [ref=e154] [cursor=pointer]:
+              - img [ref=e155]
+          - button "main branch" [ref=e159] [cursor=pointer]:
+            - generic [ref=e160]:
+              - generic [ref=e162]:
+                - img [ref=e164]
+                - generic [ref=e167]: main
+              - generic:
+                - img
+          - generic [ref=e169]:
+            - navigation "Breadcrumbs" [ref=e170]:
+              - heading "Breadcrumbs" [level=2] [ref=e171]
+              - list [ref=e172]:
+                - listitem [ref=e173]:
+                  - link "hello-agents" [ref=e174] [cursor=pointer]:
+                    - /url: /datawhalechina/hello-agents/tree/main
+                - listitem [ref=e175]:
+                  - text: /
+                  - link "code" [ref=e176] [cursor=pointer]:
+                    - /url: /datawhalechina/hello-agents/tree/main/code
+            - generic [ref=e177]:
+              - text: /
+              - heading "chapter6" [level=1] [ref=e178]
+              - text: /
+            - button "Copy path" [ref=e179] [cursor=pointer]:
+              - img [ref=e180]
+        - generic [ref=e185]:
+          - heading "Directory actions" [level=2] [ref=e186]
+          - generic [ref=e189]:
+            - img [ref=e191]
+            - combobox "Go to file" [ref=e193]
+          - heading "More options" [level=2] [ref=e194]
+          - button "More options" [ref=e195] [cursor=pointer]:
+            - img [ref=e196]
+      - generic [ref=e198]:
+        - generic [ref=e200]:
+          - heading "Latest commit" [level=2] [ref=e201]
+          - generic [ref=e204]:
+            - heading "History" [level=2] [ref=e205]
+            - link "History" [ref=e206] [cursor=pointer]:
+              - /url: /datawhalechina/hello-agents/commits/main/code/chapter6
+              - generic [ref=e207]:
+                - generic:
+                  - img
+                - generic [ref=e208]: History
+        - generic [ref=e210]:
+          - heading "Folders and files" [level=2] [ref=e211]
+          - table "Folders and files" [ref=e212]:
+            - rowgroup [ref=e213]:
+              - row "Name Last commit message Last commit date" [ref=e214]:
+                - columnheader "Name" [ref=e215]
+                - columnheader "Last commit message" [ref=e216]:
+                  - generic "Last commit message" [ref=e217]
+                - columnheader "Last commit date" [ref=e218]:
+                  - generic "Last commit date" [ref=e219]
+            - rowgroup [ref=e220]:
+              - row "parent directory Parent directory" [ref=e221]:
+                - cell "parent directory Parent directory" [ref=e222]:
+                  - heading "parent directory" [level=3] [ref=e223]
+                  - link "Parent directory" [ref=e224] [cursor=pointer]:
+                    - /url: /datawhalechina/hello-agents/tree/main/code
+                    - generic [ref=e225]:
+                      - img [ref=e226]
+                      - text: ..
+              - row "AgentScopeDemo, (Directory)" [ref=e228]:
+                - cell "AgentScopeDemo, (Directory)" [ref=e229]:
+                  - generic [ref=e230]:
+                    - img [ref=e231]
+                    - link "AgentScopeDemo, (Directory)" [ref=e236] [cursor=pointer]:
+                      - /url: /datawhalechina/hello-agents/tree/main/code/chapter6/AgentScopeDemo
+                      - text: AgentScopeDemo
+                - cell [ref=e237]
+                - cell [ref=e239]
+              - row "AutoGenDemo, (Directory)" [ref=e242]:
+                - cell "AutoGenDemo, (Directory)" [ref=e243]:
+                  - generic [ref=e244]:
+                    - img [ref=e245]
+                    - link "AutoGenDemo, (Directory)" [ref=e250] [cursor=pointer]:
+                      - /url: /datawhalechina/hello-agents/tree/main/code/chapter6/AutoGenDemo
+                      - text: AutoGenDemo
+                - cell [ref=e251]
+                - cell [ref=e253]
+              - row "CAMEL, (Directory)" [ref=e256]:
+                - cell "CAMEL, (Directory)" [ref=e257]:
+                  - generic [ref=e258]:
+                    - img [ref=e259]
+                    - link "CAMEL, (Directory)" [ref=e264] [cursor=pointer]:
+                      - /url: /datawhalechina/hello-agents/tree/main/code/chapter6/CAMEL
+                      - text: CAMEL
+                - cell [ref=e265]
+                - cell [ref=e267]
+              - row "Langgraph, (Directory)" [ref=e270]:
+                - cell "Langgraph, (Directory)" [ref=e271]:
+                  - generic [ref=e272]:
+                    - img [ref=e273]
+                    - link "Langgraph, (Directory)" [ref=e278] [cursor=pointer]:
+                      - /url: /datawhalechina/hello-agents/tree/main/code/chapter6/Langgraph
+                      - text: Langgraph
+                - cell [ref=e279]
+                - cell [ref=e281]
+  - contentinfo [ref=e285]:
+    - heading "Footer" [level=2] [ref=e286]
+    - generic [ref=e287]:
+      - generic [ref=e288]:
+        - link "GitHub Homepage" [ref=e289] [cursor=pointer]:
+          - /url: https://github.com
+          - img [ref=e290]
+        - generic [ref=e292]: © 2026 GitHub, Inc.
+      - navigation "Footer" [ref=e293]:
+        - heading "Footer navigation" [level=3] [ref=e294]
+        - list "Footer navigation" [ref=e295]:
+          - listitem [ref=e296]:
+            - link "Terms" [ref=e297] [cursor=pointer]:
+              - /url: https://docs.github.com/site-policy/github-terms/github-terms-of-service
+          - listitem [ref=e298]:
+            - link "Privacy" [ref=e299] [cursor=pointer]:
+              - /url: https://docs.github.com/site-policy/privacy-policies/github-privacy-statement
+          - listitem [ref=e300]:
+            - link "Security" [ref=e301] [cursor=pointer]:
+              - /url: https://github.com/security
+          - listitem [ref=e302]:
+            - link "Status" [ref=e303] [cursor=pointer]:
+              - /url: https://www.githubstatus.com/
+          - listitem [ref=e304]:
+            - link "Community" [ref=e305] [cursor=pointer]:
+              - /url: https://github.community/
+          - listitem [ref=e306]:
+            - link "Docs" [ref=e307] [cursor=pointer]:
+              - /url: https://docs.github.com/
+          - listitem [ref=e308]:
+            - link "Contact" [ref=e309] [cursor=pointer]:
+              - /url: https://support.github.com?tags=dotcom-footer
+          - listitem [ref=e310]:
+            - button "Manage cookies" [ref=e312] [cursor=pointer]
+          - listitem [ref=e313]:
+            - button "Do not share my personal information" [ref=e315] [cursor=pointer]

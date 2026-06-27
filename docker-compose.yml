@@ -1,0 +1,32 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    ports:
+      - "8000:8000"
+    environment:
+      - ARENA_MASTER_KEY=${ARENA_MASTER_KEY:-change-me-in-production}
+      - ARENA_SECRET_KEY=${ARENA_SECRET_KEY:-change-me-in-production}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      # 或使用加密格式: DEEPSEEK_API_KEY_ENC=${DEEPSEEK_API_KEY_ENC}
+      - DATABASE_URL=sqlite:///data/arena.db
+    volumes:
+      - arena_data:/app/data
+      - ./memory:/app/memory
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  arena_data:

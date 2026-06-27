@@ -1,0 +1,39 @@
+# Environment — contains secrets, never commit
+.env
+.env.key
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker/.env
+
+# Testing
+.pytest_cache/
+htmlcov/
+.coverage*
+
+# Node (frontend)
+node_modules/

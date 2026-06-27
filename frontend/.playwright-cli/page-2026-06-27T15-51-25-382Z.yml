@@ -1,0 +1,51 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - link "⚔️ ArenaView" [ref=e6] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e7]: ⚔️
+        - generic [ref=e8]: ArenaView
+      - navigation [ref=e9]:
+        - link "历史" [ref=e10] [cursor=pointer]:
+          - /url: /history
+        - link "⚙️ API" [ref=e11] [cursor=pointer]:
+          - /url: /settings
+  - main [ref=e12]:
+    - generic [ref=e13]:
+      - generic [ref=e14]:
+        - heading "多视角 决策分析" [level=1] [ref=e15]
+        - paragraph [ref=e16]: 不是给你一个答案，而是让一群 AI 从不同立场辩论，帮你理解决策的全貌。
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - generic [ref=e19]: 描述你的决策困境
+          - textbox "例如：我在北京工作3年，目前租房月租6000，手头有80万存款。父母催买房，但我担心房价继续跌。该不该现在买？" [ref=e20]
+        - generic [ref=e21]:
+          - generic [ref=e22]: 你正在考虑的选项（可选，逗号分隔）
+          - textbox "买房, 继续租房, 搬到郊区买" [ref=e23]
+        - button "开始分析" [ref=e24] [cursor=pointer]
+      - generic [ref=e25]:
+        - paragraph [ref=e26]: 试试这些问题：
+        - generic [ref=e27]:
+          - button "🏠在上海工作5年存款50万，该买房还是继续租房？" [ref=e28] [cursor=pointer]
+          - button "💼收到创业公司offer降薪30%但给期权，该不该去？" [ref=e29] [cursor=pointer]
+          - button "📚孩子教育该走应试路线还是国际路线？" [ref=e30] [cursor=pointer]
+          - button "💰现在该投资黄金、股票还是持有现金？" [ref=e31] [cursor=pointer]
+      - generic [ref=e32]:
+        - heading "工作原理" [level=2] [ref=e33]
+        - generic [ref=e34]:
+          - generic [ref=e35]:
+            - generic [ref=e36]: 🎯
+            - generic [ref=e37]: 视角生成
+            - generic [ref=e38]: 拆解为4-6个不同立场
+          - generic [ref=e39]:
+            - generic [ref=e40]: 🔍
+            - generic [ref=e41]: 独立研究
+            - generic [ref=e42]: 每个视角搜索论证
+          - generic [ref=e43]:
+            - generic [ref=e44]: ⚔️
+            - generic [ref=e45]: 交叉辩论
+            - generic [ref=e46]: 视角之间互相质疑
+          - generic [ref=e47]:
+            - generic [ref=e48]: 🗺️
+            - generic [ref=e49]: 决策地图
+            - generic [ref=e50]: 帮你理解决策全貌
