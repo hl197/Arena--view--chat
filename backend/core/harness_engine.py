@@ -68,7 +68,8 @@ class HarnessEngine:
 
         # 注册默认工具
         self.tool_registry.register_tool(WebSearchTool(
-            timeout=self.config.search_timeout_seconds
+            timeout=self.config.search_timeout_seconds,
+            api_key=self.config.tavily_api_key or "",
         ))
         self.tool_registry.register_tool(WebFetchTool(
             timeout=self.config.search_timeout_seconds
@@ -511,7 +512,7 @@ class HarnessEngine:
 - 🗣️ 像微信群聊一样自然、口语化，不是写论文
 - 🎭 保持你的性格特点和口头禅，做你自己
 - 💬 前面有人说过话的话，记得回应他们（赞同/反对/补充都可以）
-- 📏 200-500 字就够了，别写太长
+- 📏 400-1000 字比较合适，充分展开你的观点但别啰嗦
 - ❌ 不要用 Markdown 格式、不要用 # 标题、不要列 1234
 - ✅ 诚实地说出你的不确定和局限
 - 😊 适当用 emoji 表达情绪"""

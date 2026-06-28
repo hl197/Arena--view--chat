@@ -49,6 +49,7 @@ python -m backend.scripts.encrypt_key --key sk-xxx --name DEEPSEEK  # 生成加�
 
 # 快速测试：明文 Key
 DEEPSEEK_API_KEY=your-key  # 获取: https://platform.deepseek.com/api_keys
+TAVILY_API_KEY=your-key     # 获取: https://tavily.com（AI Agent 专用搜索 API，免费 1000次/月）
 
 # 其他可选
 ARENA_MASTER_KEY=auto-generated    # 加密主密钥，首次启动自动生成

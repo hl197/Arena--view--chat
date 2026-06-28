@@ -125,8 +125,16 @@ class JudgeAgent(Agent):
                     data={"iteration": iteration, "text": feedback[:300]}
                 )))
 
-            # 检查停止条件
-            if "无需改进" in feedback:
+            # 检查停止条件 —— 必须严格匹配，防止误判
+            # 只有明确表示"整体无需改进"才停止，部分改进仍需继续
+            no_improvement_markers = [
+                "无需改进", "不需要改进", "没有明显问题", "无需修改",
+                "已经很完善", "没有需要改进", "整体无需改进",
+            ]
+            should_stop = any(m in feedback for m in no_improvement_markers)
+            # 但同时要确保不是在说"部分无需改进"——如果反馈包含"但"/"不过"/"然而"等转折，说明仍有改进空间
+            has_critique = any(w in feedback for w in ["但需要", "不过需要", "然而", "需要补充", "需要改进", "可以加强", "建议补充"])
+            if should_stop and not has_critique:
                 break
 
             # 改进

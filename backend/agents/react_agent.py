@@ -181,7 +181,29 @@ class ReActAgent(Agent):
                             "content": "你已经搜到了一些链接，但还没打开看过。在你发言之前，选 1 个最相关的链接用 web_fetch 打开读一下正文——只看摘要是不够的，你需要看到具体的数据和观点才能在群里说出有价值的东西。读完再发言。"
                         })
                     continue
-                # 内容足够就结束
+
+                # 没有任何工具调用就想结束？拦截——除非内容足够充实
+                has_done_research = len(self._recent_actions) > 0
+                if not has_done_research and len(content) < 300:
+                    debug.hook("agent_nudge", reason="没做任何搜索就想用短回答敷衍")
+                    messages.append({
+                        "role": "user",
+                        "content": "你还没搜任何资料呢！先别急着发言。用 web_search 搜一下这个问题的最新信息，然后 web_fetch 打开最相关的链接读完整内容。有了具体信息再发言，现在这样太空泛了。"
+                    })
+                    continue
+                if not has_done_research:
+                    if len(content) < 400:
+                        debug.hook("agent_nudge", reason=f"没做搜索，内容{len(content)}字不够充实")
+                        messages.append({
+                            "role": "user",
+                            "content": "你没搜资料，内容也不够充实。要么用 web_search 搜一下相关信息再展开说，要么至少说够 400 字——现在这样太简略了，给不出有价值的分析。"
+                        })
+                        continue
+                    debug.hook("agent_speak", name=self.perspective_name, chars=len(content),
+                                searched=False, fetched=False)
+                    return content
+
+                # 有研究基础，内容足够就结束
                 if len(content) > 100:
                     debug.hook("agent_speak", name=self.perspective_name, chars=len(content),
                                 searched=("web_search" in self._recent_actions),
@@ -250,15 +272,28 @@ class ReActAgent(Agent):
                     "content": display_text,
                 })
 
-            # 搜完后提醒下一步动作
+            # 搜完后提醒下一步动作（根据 fetch 是否拿到实际内容来调整策略）
             search_count = sum(1 for a in self._recent_actions if a == "web_search")
             fetch_count = sum(1 for a in self._recent_actions if a == "web_fetch")
+            # 检查是否有 web_fetch 真正拿到了内容
+            fetch_got_content = any(
+                s.observation and len(s.observation) > 100
+                and not s.observation.startswith("页面 ")
+                and not s.observation.startswith("打开 ")
+                and not s.observation.startswith("❌")
+                for s in self._steps if s.action == "web_fetch"
+            )
             if fetch_count >= 1 and search_count >= 2:
-                # 已经搜过也读过了，别再搜了——直接发言
-                messages.append({
-                    "role": "user",
-                    "content": "你已经搜过资料也读过网页了，信息足够了。现在直接发言吧，用你读到的内容来说。别继续搜了。"
-                })
+                if fetch_got_content:
+                    messages.append({
+                        "role": "user",
+                        "content": "你已经搜过资料也读过网页了，信息足够了。现在直接发言吧，用你读到的具体内容来说——充分展开你的观点。别继续搜了。"
+                    })
+                else:
+                    messages.append({
+                        "role": "user",
+                        "content": "你打开的网页没有提取到正文（可能是动态页面或需要登录）。换个不同的链接用 web_fetch 再试一次——选搜索结果里看起来最像文章/博客的链接。如果第二个也打不开，就用搜索结果的摘要加上你自己的了解来展开论述。"
+                    })
             elif search_count >= 2 and fetch_count == 0:
                 messages.append({
                     "role": "user",

@@ -56,7 +56,7 @@ class Database:
 
                 CREATE TABLE IF NOT EXISTS debates (
                     id TEXT PRIMARY KEY,
-                    user_id TEXT DEFAULT '',
+                    user_id TEXT DEFAULT 'anonymous',
                     question TEXT NOT NULL,
                     status TEXT DEFAULT 'completed',
                     perspectives_json TEXT DEFAULT '[]',
@@ -72,6 +72,12 @@ class Database:
                 CREATE INDEX IF NOT EXISTS idx_debates_user ON debates(user_id);
                 CREATE INDEX IF NOT EXISTS idx_debates_created ON debates(created_at);
             """)
+
+            # 确保匿名用户存在（JWT 认证未上线前的默认用户）
+            conn.execute(
+                "INSERT OR IGNORE INTO users (id, email, password_hash, tier, created_at) VALUES (?, ?, ?, ?, ?)",
+                ("anonymous", "anonymous@arena.local", "$none$", "guest", 0.0)
+            )
 
     # === User ===
     def create_user(self, user_id: str, email: str, password_hash: str, tier: str = "registered") -> dict:
@@ -158,7 +164,7 @@ class Database:
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     debate_data["id"],
-                    debate_data.get("user_id", ""),
+                    debate_data.get("user_id", "anonymous"),
                     debate_data["question"],
                     debate_data.get("status", "completed"),
                     json.dumps(debate_data.get("perspectives", []), ensure_ascii=False),

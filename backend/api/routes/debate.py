@@ -87,31 +87,36 @@ async def start_debate(req: DebateStartRequest, request: Request):
                 status=session.status,
             ))
 
-            # 保存到 SQLite
-            db.save_debate({
-                "id": session.id,
-                "question": session.question,
-                "status": session.status,
-                "perspectives": [
-                    {"id": p.id, "name": p.name, "stance": p.stance}
-                    for p in session.perspectives
-                ],
-                "arguments": session.arguments,
-                "debate_transcript": [
-                    {
-                        "round": t.round,
-                        "challenger_name": t.challenger_name,
-                        "defender_name": t.defender_name,
-                        "challenge": t.challenge,
-                        "defense": t.defense,
-                        "judge_note": t.judge_note,
-                    }
-                    for t in session.debate_turns
-                ],
-                "decision_map": session.decision_map,
-                "total_tokens": session.total_tokens,
-                "total_time_ms": session.total_time_ms,
-            })
+            # 保存到 SQLite（非致命——失败不影响辩论结果）
+            try:
+                db.save_debate({
+                    "id": session.id,
+                    "user_id": "anonymous",
+                    "question": session.question,
+                    "status": session.status,
+                    "perspectives": [
+                        {"id": p.id, "name": p.name, "stance": p.stance}
+                        for p in session.perspectives
+                    ],
+                    "arguments": session.arguments,
+                    "debate_transcript": [
+                        {
+                            "round": t.round,
+                            "challenger_name": t.challenger_name,
+                            "defender_name": t.defender_name,
+                            "challenge": t.challenge,
+                            "defense": t.defense,
+                            "judge_note": t.judge_note,
+                        }
+                        for t in session.debate_turns
+                    ],
+                    "decision_map": session.decision_map,
+                    "total_tokens": session.total_tokens,
+                    "total_time_ms": session.total_time_ms,
+                })
+            except Exception as db_err:
+                import sys
+                print(f"   ⚠️  数据库保存失败（非致命）: {db_err}", file=sys.stderr, flush=True)
         except Exception as e:
             await queue.put(StreamEvent(
                 type=StreamEventType.ERROR,

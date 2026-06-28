@@ -330,12 +330,10 @@ export default function DebatePage() {
 
       case 'self_reflection':
         store.setJudgeState('composing')
-        addMsg({
-          id: nextMsgId(), senderId: 'judge', senderName: '裁判',
-          avatar: AVATAR_MAP['judge'],
-          content: `🔍 自我审查：${(event.text || '') as string}`,
-          timestamp: now, type: 'judge',
-        })
+        {
+          const iter = (event.iteration || 1) as number
+          addMsg(mkSys(`🪞 裁判正在自我审查第 ${iter} 轮，检查偏见、遗漏和假共识...`))
+        }
         break
 
       case 'decision_map_chunk':

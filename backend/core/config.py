@@ -15,6 +15,9 @@ class ArenaConfig:
     default_model: str = "deepseek-chat"
     default_api_key: Optional[str] = field(default_factory=lambda: os.getenv("DEEPSEEK_API_KEY"))
 
+    # === 搜索 API ===
+    tavily_api_key: Optional[str] = field(default_factory=lambda: os.getenv("TAVILY_API_KEY", ""))
+
     # === 免费额度 ===
     guest_daily_limit: int = 3       # 游客每日辩论次数
     guest_max_perspectives: int = 4   # 游客最大视角数
@@ -29,7 +32,7 @@ class ArenaConfig:
     pro_debate_rounds: int = 3
 
     # === Agent 执行 ===
-    max_agent_steps: int = 5           # ReAct Agent 最大步数
+    max_agent_steps: int = 8           # ReAct Agent 最大步数（搜→读→搜→读→发言 = 5步，留3步容错）
     agent_timeout_seconds: int = 60    # 单Agent超时
     debate_timeout_seconds: int = 120  # 整场辩论超时
     search_timeout_seconds: int = 5    # 单次搜索超时
