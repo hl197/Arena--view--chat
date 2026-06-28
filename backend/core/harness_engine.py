@@ -28,7 +28,9 @@ from ..agents.judge_agent import JudgeAgent
 from ..agents.factory import create_react_agent, create_judge_agent
 from ..tools.registry import ToolRegistry
 from ..tools.builtin.web_search import WebSearchTool
+from ..tools.builtin.web_fetch import WebFetchTool
 from ..tools.builtin.finish_tool import FinishTool
+from .debug_hooks import debug
 
 
 @dataclass
@@ -66,6 +68,9 @@ class HarnessEngine:
 
         # 注册默认工具
         self.tool_registry.register_tool(WebSearchTool(
+            timeout=self.config.search_timeout_seconds
+        ))
+        self.tool_registry.register_tool(WebFetchTool(
             timeout=self.config.search_timeout_seconds
         ))
         self.tool_registry.register_tool(FinishTool())
@@ -110,6 +115,7 @@ class HarnessEngine:
 
         try:
             # ===== Phase 1: 视角生成 =====
+            debug.checkpoint("Phase 1", "视角生成")
             await emit(StreamEvent(
                 type=StreamEventType.PHASE,
                 data={"phase": "perspectives", "status": "generating"}
@@ -139,6 +145,7 @@ class HarnessEngine:
                 ))
 
             # ===== Phase 1.5: 自我介绍（每个角色发一条入群消息） =====
+            debug.checkpoint("Phase 1.5", "自我介绍")
             for p in perspectives:
                 await emit(StreamEvent(
                     type=StreamEventType.AGENT_STATUS,
@@ -173,6 +180,7 @@ class HarnessEngine:
             # ===== Phase 2: 群聊轮次讨论（Multi-Agent Sequential Rounds）=====
             # 替代旧的研究+辩论阶段，采用顺序轮次多智能体群聊模式
             # 参考 AgentScope sequential_pipeline + MsgHub 模式
+            debug.checkpoint("Phase 2", f"群聊讨论 ({debate_rounds + 1} 轮)")
             await emit(StreamEvent(
                 type=StreamEventType.PHASE,
                 data={"phase": "discussion", "status": "running"}
@@ -200,7 +208,8 @@ class HarnessEngine:
                       "total_speeches": len(conversation_history)}
             ))
 
-            # ===== Phase 4: 裁判合成 =====
+            # ===== Phase 3: 裁判合成 =====
+            debug.checkpoint("Phase 3", "裁判合成")
             await emit(StreamEvent(
                 type=StreamEventType.PHASE,
                 data={"phase": "synthesis", "status": "running"}
@@ -290,6 +299,8 @@ class HarnessEngine:
         for round_num in range(1, num_rounds + 1):
             description = round_descriptions.get(round_num, f"第{round_num}轮讨论")
 
+            debug.hook("round_start", num=round_num, total=num_rounds)
+
             await emit(StreamEvent(
                 type=StreamEventType.ROUND_START,
                 data={
@@ -301,6 +312,7 @@ class HarnessEngine:
 
             # 本轮发言顺序
             for i, p in enumerate(perspectives):
+                debug.hook("agent_turn", name=p.name, round=round_num)
                 # 1. 通知前端"谁在说话"
                 await emit(StreamEvent(
                     type=StreamEventType.AGENT_STATUS,
@@ -343,7 +355,7 @@ class HarnessEngine:
                     data={"perspective_name": p.name, "status": "composing"}
                 ))
 
-                chunks = self._split_into_chunks(argument, max_chars=350)
+                chunks = self._split_into_chunks(argument, max_chars=2000)
                 for j, chunk in enumerate(chunks):
                     is_final = (j == len(chunks) - 1)
                     await emit(StreamEvent(
@@ -386,6 +398,7 @@ class HarnessEngine:
                     await asyncio.sleep(2)
 
             # 本轮结束
+            debug.hook("round_end", num=round_num)
             await emit(StreamEvent(
                 type=StreamEventType.ROUND_END,
                 data={"round_number": round_num}
@@ -444,13 +457,14 @@ class HarnessEngine:
         if round_num == 1:
             task = f"""这是第 1 轮讨论（共 {total_rounds} 轮）——开场陈述。
 
-你的任务：
-1. 先从你的视角分析一下"{question}"
-2. 说说你最关注什么、最担心什么
-3. 可以搜 1-2 次资料来支撑你的观点
-4. 自然地开场，像在群里第一个说话的人
+你的任务——按顺序执行，不要跳过任何一步：
+1. 🔍 用 web_search 搜 1-2 次，了解"{question}"的最新情况
+2. 📖 从搜索结果中选 1-2 个最相关的链接，用 web_fetch 打开阅读完整内容
+   ⚠️ 必须读！只看摘要（一两百字）根本不够，一定要打开页面看完整文章
+3. 💬 结合读到的具体信息，从你的视角分析，说说你最关注什么
+4. 🎤 自然地开场，像在群里第一个说话的人
 
-注意：这是开场，不用回应别人（还没人说过话），重点是把你的初步看法说出来。"""
+注意：搜完不读 = 白搜。摘要只是索引，正文才有数据、观点、细节。"""
         elif round_num == total_rounds:
             task = f"""这是最后一轮讨论（第 {round_num}/{total_rounds} 轮）——最后陈述。
 
@@ -462,12 +476,14 @@ class HarnessEngine:
         else:
             task = f"""这是第 {round_num} 轮讨论（共 {total_rounds} 轮）——交叉回应。
 
-你的任务：
+你的任务——按顺序：
 1. 看看前面大家的发言，找到你同意和不同意的点
-2. 对你不同意的观点，礼貌地提出你的质疑或不同看法
-3. 对你同意的观点，可以补充更多论据
-4. 如果有人提到了你的盲区或质疑了你的立场，请回应
-5. 可以搜 1 次资料来支撑你的反驳"""
+2. 🔍 如果需要新资料来支撑你的反驳，用 web_search 搜 1 次
+3. 📖 搜到链接后必须用 web_fetch 打开 1 个看完整内容
+4. 对你不同意的观点，礼貌地质疑或提出不同看法（引用你读到的信息）
+5. 对你同意的观点，补充更多论据
+6. 有人提到你的盲区或质疑了你的立场，请回应"""
+
 
         return f"""你是「{perspective.name}」—— {perspective.role_label}
 
@@ -576,3 +592,4 @@ class HarnessEngine:
             parts.append("")
 
         return "\n".join(parts)
+

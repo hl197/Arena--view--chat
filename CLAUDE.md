@@ -13,11 +13,12 @@ ArenaView — 多视角决策分析平台。用户提出决策困境（买房、
 ```
 用户问题
   → PerspectiveGenerator (信息不对称注入 → 4-6个视角)
-  → Parallel ReActAgents (独立搜索+论证, asyncio.gather)
-  → DebateScheduler (轮转交叉质询, 2轮)
+  → 顺序轮次群聊讨论 (每轮按固定顺序依次发言，串行保证不乱)
   → JudgeAgent (Reflection模式: 初稿→自审→改进)
   → 决策地图输出 (共识点+分歧点+权衡维度+未知因素+风险矩阵)
 ```
+
+**架构：** 每个 Agent 独立 LLM 调用，按固定顺序在 `for` 循环中依次发言（非 `asyncio.gather` 并行），每轮发言前能看到完整对话历史。前端消息按 `speech_chunk` 事件累积，`is_final=true` 时一次性展示带 avatar 的完整发言。
 
 **四层架构：** 基础设施(adapters/tools/context) → Agent基类 → Agent实现(ReAct/Judge) → Harness引擎(core/)
 
@@ -61,12 +62,13 @@ DATABASE_URL=sqlite:///arena.db    # 可选，默认 SQLite
 |------|------|------|
 | **LLM适配器** | `adapters/unified_llm.py` | ArenaLLM多模型路由，用户LLM优先→降级默认Gemini |
 | **视角生成器** | `core/perspective_generator.py` | 信息不对称注入——6种原型+LLM定制，生成有差异的视角 |
-| **辩论调度器** | `core/debate_scheduler.py` | 最大分歧配对+轮转交叉质询 |
+| **辩论调度器** | `core/debate_scheduler.py` | 保留（向后兼容），当前使用顺序轮次群聊 |
 | **Harness引擎** | `core/harness_engine.py` | 完整4阶段编排：视角→研究→辩论→合成 |
 | **ReActAgent** | `agents/react_agent.py` | 视角研究执行者，FC驱动多步搜索+论证构建 |
 | **JudgeAgent** | `agents/judge_agent.py` | Reflection模式：初始合成→自审→改进，输出决策地图 |
 | **SSE流式** | `core/streaming.py` | StreamEvent类型系统+SSEManager连接管理 |
-| **工具系统** | `tools/` | ToolResponse三态协议+ToolRegistry+CircuitBreaker+WebSearch(免费DuckDuckGo) |
+| **调试系统** | `core/debug_hooks.py` | DebugHooks 单例：checkpoint/hook/error，stderr 输出，零开销开关 |
+| **工具系统** | `tools/` | ToolResponse三态协议+ToolRegistry+CircuitBreaker+WebSearch(Bing httpx)+WebFetch(httpx+HTML提取) |
 | **上下文工程** | `context/` | HistoryManager(追加+压缩)+TokenCounter(三级降级)+Truncator |
 
 ## Coding Patterns
@@ -78,9 +80,11 @@ DATABASE_URL=sqlite:///arena.db    # 可选，默认 SQLite
 - **命名约定**: 后端模块用下划线 (`harness_engine.py`)，前端组件 PascalCase (`DebatePage.tsx`)。
 - **状态管理**: 前端 Zustand store (`debateStore.ts`)，按 SSE 事件类型分派到 store actions。
 
-## Current State (2026-06-27)
+## Current State (2026-06-28)
 
-- ✅ 第1-2周完成：后端48文件3696行 + 前端13源文件1077行
+- ✅ 第1-2周完成：后端48文件~3700行 + 前端16源文件~1200行
+- ✅ 搜索工具：Bing (httpx) + WebFetch (httpx HTML 提取，替代了 Playwright 方案)
+- ✅ Agent 系统提示优化：人类式遮掩（搜不到时不暴露"搜索失败"，用"据我所知"自然过渡）
 - ⏳ 第3周待做：JWT认证、API Key加密存储、SQLite持久化、额度持久化、热门问题缓存
 - ⏳ 第4周待做：Docker部署、UI打磨(加载/空态/错误态)、首页Demo预计算、Swagger
 

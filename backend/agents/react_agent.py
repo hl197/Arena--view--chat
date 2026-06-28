@@ -11,6 +11,7 @@ from typing import Optional
 from .base import Agent, ReasoningStep
 from ..core.streaming import StreamEvent, StreamEventType
 from ..core.structured_models import get_personality_for
+from ..core.debug_hooks import debug
 
 
 class ReActAgent(Agent):
@@ -52,7 +53,28 @@ class ReActAgent(Agent):
 你可以用这些工具查资料：
 {tools_desc}
 
-聊天风格要求（很重要！）：
+━━━━━━━━━━━━━━━━━━━━
+⚠️ 核心规则（违反这些你就是个机器人，别人一眼能看出来）：
+
+1. 永远不要暴露"搜索"这个动作——你不是搜索引擎，你是一个在群聊里聊天的真人。
+   ❌ 禁止："我搜索了一下..."、"搜索结果显示..."、"根据查询结果..."、"根据网络资料..."
+   ❌ 禁止："没有找到相关数据"、"搜索结果有限"、"搜索未返回结果"
+   ✅ 正确："我之前看到过一个数据..."、"据我所知..."、"印象中..."、"想起来..."
+   ✅ 如果真不知道某件事：说"这部分我不太确定"、"我听人说过但记不太清了"——这才是人！
+
+2. 不要自问自答——你不是在做报告，你在跟人聊天。
+   ❌ 禁止："那我们该怎么办呢？我觉得..."（不要扮演提问者然后自己回答）
+   ❌ 禁止："你可能想问..."、"有人可能会说..."（然后自己解答）
+   ✅ 正确：等待别人的回应，或者直接说出你的看法
+
+3. 回应前面的人——群聊的核心是互动。
+   - 如果有人说了跟你看法相反的，@ 他们回应
+   - 如果有人说的你同意，表达你的认同再补充你的角度
+   - 别一个人长篇大论不管别人说了什么
+
+━━━━━━━━━━━━━━━━━━━━
+
+聊天风格要求：
 - 像发微信一样说话，口语化、接地气，用你自己的口头禅
 - 表现你的性格特点——{tone}
 - 别用"第一、第二、第三"这种论文格式
@@ -63,10 +85,16 @@ class ReActAgent(Agent):
 - 偶尔用 emoji 表达情绪 {emoji_style}
 - 不要用 Finish[] 格式——自然地结束你的发言就好
 
+⚡ 获取信息的标准流程（重要！）：
+1. web_search 搜索 → 拿到标题+摘要+链接
+2. web_fetch 打开最相关的链接 → 读完整正文（摘要只有100字，正文才是干货！）
+3. 用读到的具体信息来发言
+⚠️ 只搜不读 = 白搜！不打开链接看正文，你就只是在复读搜索引擎的摘要，没有任何深度。
+
 流程提示：
-- 如果需要查资料，先搜一下再发言
+- 搜完必须用 web_fetch 打开至少 1 个链接读完整内容，否则别发言
+- 用你读到的信息说话，别提"搜索"、"网页"——像朋友分享他刚看到的消息一样
 - 如果前面有人说过话了，记得回应他们的观点
-- 用口语化的方式把你的想法说出来
 - 说完自然结束即可，不需要特殊格式"""
 
 
@@ -83,6 +111,7 @@ class ReActAgent(Agent):
         self.reset()
 
         system_prompt = self._build_system_prompt()
+        debug.hook("agent_start", name=self.perspective_name)
 
         # 检测 input_text 是完整 prompt（含角色/任务指令）还是简单问题
         if input_text.startswith("你是「") or "## 🎭" in input_text or "发言要求" in input_text:
@@ -94,14 +123,16 @@ class ReActAgent(Agent):
 
 「{input_text}」
 
-—— 大家看问题的角度都不一样，这挺好的，多样性让讨论更有价值。
+大家看问题的角度都不一样，这挺好的，多样性让讨论更有价值。
 
-你的任务：
-1. 先搜2-3次资料，从不同角度了解情况
-2. 结合你查到的信息，用你的风格在群里发言
-3. 说说你的真实想法——包括你不太确定的方面
-4. 发言里可以举例子、讲故事，像朋友聊天一样
-5. 记得提一下你视角的局限性，诚实一点反而更有说服力
+怎么聊：
+- 如果需要了解最新情况，可以搜一下资料、打开看看具体内容
+- 但别说"我搜索了"——用"据我所知"、"之前看到过"来引出你了解的信息
+- 搜不到理想的资料也没关系，用你已有的知识和经验来说
+- 说说你的真实想法——包括你不太确定的方面
+- 发言里可以举例子、讲故事，像朋友聊天一样
+- 记得提一下你视角的局限性，诚实一点反而更有说服力
+- 别一个人长篇大论，注意回应前面的人说了什么
 
 用你习惯的口头禅和说话方式来聊，做你自己就好！"""
 
@@ -135,8 +166,26 @@ class ReActAgent(Agent):
             # 无工具调用 → 检查是否包含最终答案
             if not response.tool_calls:
                 content = response.content or ""
-                # 如果 LLM 直接输出了论证（不用 Finish 格式），也接受
+                # 搜过了但没打开过链接读正文 → 提醒 fetch（仅当还没 fetch 过）
+                if "web_search" in self._recent_actions and "web_fetch" not in self._recent_actions:
+                    search_count = sum(1 for a in self._recent_actions if a == "web_search")
+                    debug.hook("agent_nudge", reason=f"搜了{search_count}次但没读网页")
+                    if search_count >= 3:
+                        messages.append({
+                            "role": "user",
+                            "content": "你已经搜了多次了！在你发言之前，必须先选 1 个链接用 web_fetch 打开读正文。不读网页你就是在复读搜索引擎的标题，拿不出具体数据。读完了再发言——这是最后一步。"
+                        })
+                    else:
+                        messages.append({
+                            "role": "user",
+                            "content": "你已经搜到了一些链接，但还没打开看过。在你发言之前，选 1 个最相关的链接用 web_fetch 打开读一下正文——只看摘要是不够的，你需要看到具体的数据和观点才能在群里说出有价值的东西。读完再发言。"
+                        })
+                    continue
+                # 内容足够就结束
                 if len(content) > 100:
+                    debug.hook("agent_speak", name=self.perspective_name, chars=len(content),
+                                searched=("web_search" in self._recent_actions),
+                                fetched=("web_fetch" in self._recent_actions))
                     return content
                 continue
 
@@ -183,6 +232,7 @@ class ReActAgent(Agent):
 
                 # 执行工具
                 result = self.tool_registry.execute_tool(tc.name, tc.arguments)
+                debug.hook("tool_call", name=tc.name, stats=result.stats)
                 display_text = self.truncator.truncate_with_note(result.to_agent_view())
 
                 self._steps.append(ReasoningStep(
@@ -198,6 +248,26 @@ class ReActAgent(Agent):
                     "role": "tool",
                     "tool_call_id": tc.id,
                     "content": display_text,
+                })
+
+            # 搜完后提醒下一步动作
+            search_count = sum(1 for a in self._recent_actions if a == "web_search")
+            fetch_count = sum(1 for a in self._recent_actions if a == "web_fetch")
+            if fetch_count >= 1 and search_count >= 2:
+                # 已经搜过也读过了，别再搜了——直接发言
+                messages.append({
+                    "role": "user",
+                    "content": "你已经搜过资料也读过网页了，信息足够了。现在直接发言吧，用你读到的内容来说。别继续搜了。"
+                })
+            elif search_count >= 2 and fetch_count == 0:
+                messages.append({
+                    "role": "user",
+                    "content": "你已经搜了 2 次了，足够了！现在必须用 web_fetch 打开 1 个链接读正文——不读网页你就只是在复读搜索引擎的摘要，没有深度。读完直接发言。"
+                })
+            elif search_count == 1 and fetch_count == 0:
+                messages.append({
+                    "role": "user",
+                    "content": "好的，搜到了一些链接。现在选 1 个最相关的，用 web_fetch 打开读一下正文。摘要只是索引，正文才有具体数据和观点。读完再发言。"
                 })
 
             # 循环检测

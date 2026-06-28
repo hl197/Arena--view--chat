@@ -39,6 +39,10 @@ export default function DebatePage() {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const processingRef = useRef(false)
 
+  // 发言 chunk 累积缓冲（解决同一发言被拆成多条消息的问题）
+  // key: senderId, value: 累积的文本
+  const speechBufferRef = useRef<Map<string, string>>(new Map())
+
   const processNext = useCallback(() => {
     if (queueRef.current.length === 0) {
       processingRef.current = false
@@ -49,23 +53,24 @@ export default function DebatePage() {
     const fn = queueRef.current.shift()!
     fn()
     if (queueRef.current.length > 0) {
-      timerRef.current = setTimeout(processNext, 4000) // 4秒间隔
+      timerRef.current = setTimeout(processNext, 2500) // 2.5秒间隔
     } else {
       processingRef.current = false
       timerRef.current = null
     }
   }, [])
 
-  /** 发消息：系统/用户立即发，Agent 排队 4 秒一条 */
+  /** 发消息：所有消息排队依次显示，保持顺序一致 */
   const addMsg = useCallback((msg: ChatMessage) => {
-    if (msg.type === 'system' || msg.type === 'user') {
+    // 用户消息立即显示（用户自己的操作应该即时反馈）
+    if (msg.type === 'user') {
       store.addMessage(msg)
       return
     }
     queueRef.current.push(() => store.addMessage(msg))
     if (!processingRef.current) {
-      // 首条消息延迟 800ms（让状态栏先更新）
-      timerRef.current = setTimeout(processNext, 800)
+      // 首条消息延迟 600ms（让状态栏先更新），后续每条间隔 2.5 秒
+      timerRef.current = setTimeout(processNext, 600)
     }
   }, [store, processNext])
 
@@ -220,33 +225,49 @@ export default function DebatePage() {
         const isFinal = event.is_final as boolean
 
         if (text.trim()) {
-          // 同一人连续发片段时，合并到上一条消息
-          const lastMsg = store.messages[store.messages.length - 1]
-          if (isFinal === false && lastMsg && lastMsg.senderId === senderId && lastMsg.type === 'agent') {
-            store.appendToLastMessage(text)
-          } else {
+          // 累积到缓冲区，等 is_final 时一次性创建消息
+          // 避免因延迟队列导致同一发言被拆成多条消息
+          const buffer = speechBufferRef.current
+          const accumulated = (buffer.get(senderId) || '') + text
+          buffer.set(senderId, accumulated)
+
+          if (isFinal) {
+            // 发言结束 —— 取出完整文本，清空缓冲区，创建一条消息
+            const fullText = buffer.get(senderId) || ''
+            buffer.delete(senderId)
             addMsg({
               id: nextMsgId(), senderId, senderName,
               avatar: AVATAR_MAP[senderId],
-              content: text, timestamp: now, type: 'agent',
+              content: fullText, timestamp: now, type: 'agent',
             })
+            store.setTypingNames([])
+            store.setAgentStatus(senderName, 'done')
+          } else {
+            // 还在发言中 —— 只更新状态，不创建消息
+            store.setAgentStatus(senderName, 'composing')
+            store.setTypingNames([senderName])
           }
-        }
-
-        // 更新状态
-        store.setAgentStatus(senderName, 'composing')
-        store.setTypingNames([senderName])
-
-        // 最后一段
-        if (isFinal) {
-          store.setTypingNames([])
-          store.setAgentStatus(senderName, 'done')
         }
         break
       }
 
       case 'speech_end': {
         const senderName = (event.perspective_name || '') as string
+        const perspective = store.perspectives.find(p => p.name === senderName)
+        const senderId = perspective?.id || (event.perspective_id as string) || 'unknown'
+
+        // 安全兜底：如果缓冲区还有残留（异常情况），强制发出
+        const buffer = speechBufferRef.current
+        const remaining = buffer.get(senderId)
+        if (remaining) {
+          buffer.delete(senderId)
+          addMsg({
+            id: nextMsgId(), senderId, senderName,
+            avatar: AVATAR_MAP[senderId],
+            content: remaining, timestamp: now, type: 'agent',
+          })
+        }
+
         store.setAgentStatus(senderName, 'done')
         store.setTypingNames(store.typingNames.filter(n => n !== senderName))
         break

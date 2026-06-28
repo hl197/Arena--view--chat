@@ -1,29 +1,24 @@
 """Web 搜索工具
 
-免费方案：DuckDuckGo Instant Answer API（无需 Key）
-高级方案：用户配置 SerpAPI / Google Custom Search
-
-搜索策略：
-1. DuckDuckGo（免费，无速率限制问题）
-2. 降级：纯文本返回（告知用户配置 Key 可解锁更好搜索）
+用 httpx 直接请求 Bing（比浏览器更不容易触发验证码），正则解析结果。
 """
 
 import re
-from urllib.parse import quote
+import html as html_mod
+import httpx
 from ..base import Tool, ToolParameter
 from ..response import ToolResponse
 from ..errors import ToolErrorCode
 
 
 class WebSearchTool(Tool):
-    """Web 搜索工具——免费 DuckDuckGo + 可选 SerpAPI"""
+    """Web 搜索工具——httpx 请求 Bing 搜索"""
 
-    def __init__(self, user_serpapi_key: str = None, timeout: int = 5):
+    def __init__(self, timeout: int = 8):
         super().__init__(
             name="web_search",
             description="搜索互联网获取最新信息。返回标题、摘要和URL。用于查询事实、新闻、数据。"
         )
-        self._serpapi_key = user_serpapi_key
         self._timeout = timeout
 
     def get_parameters(self) -> list[ToolParameter]:
@@ -31,126 +26,88 @@ class WebSearchTool(Tool):
             ToolParameter(name="query", type="string",
                           description="搜索查询词", required=True),
             ToolParameter(name="num_results", type="integer",
-                          description="返回结果数量（默认5）", required=False, default=5),
+                          description="返回结果数量（默认5，最多10）", required=False, default=5),
         ]
 
     def run(self, parameters: dict) -> ToolResponse:
-        query = parameters.get("query", "")
-        num_results = int(parameters.get("num_results", 5))
+        query = parameters.get("query", "").strip()
+        num = max(1, min(int(parameters.get("num_results", 5)), 10))
 
-        # 安全检查
-        if not query.strip():
-            return ToolResponse.error(
-                code=ToolErrorCode.MISSING_PARAM,
-                message="搜索查询词不能为空"
-            )
-        if len(query) > 500:
-            return ToolResponse.error(
-                code=ToolErrorCode.INVALID_PARAM,
-                message=f"查询词过长（{len(query)}字符），最大 500 字符"
-            )
-        num_results = max(1, min(num_results, 10))  # 限制 1-10
-
-        # 优先 SerpAPI（如有 Key）
-        if self._serpapi_key:
-            return self._search_serpapi(query, num_results)
-
-        # 默认 DuckDuckGo
-        return self._search_duckduckgo(query, num_results)
-
-    def _search_duckduckgo(self, query: str, num: int) -> ToolResponse:
-        """DuckDuckGo Instant Answer API（免费）"""
-        import urllib.request
-        import json
+        if not query:
+            return ToolResponse.error(ToolErrorCode.MISSING_PARAM, "搜索词不能为空")
 
         try:
-            url = f"https://api.duckduckgo.com/?q={quote(query)}&format=json&no_html=1"
-            req = urllib.request.Request(url, headers={"User-Agent": "ArenaView/1.0"})
-            with urllib.request.urlopen(req, timeout=self._timeout) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-
-            results = []
-
-            # 1. Instant Answer（如有）
-            if data.get("AbstractText"):
-                results.append({
-                    "title": data.get("AbstractSource", "DuckDuckGo"),
-                    "snippet": data["AbstractText"],
-                    "url": data.get("AbstractURL", ""),
-                    "type": "instant_answer"
-                })
-
-            # 2. Related Topics
-            for topic in data.get("RelatedTopics", [])[:num]:
-                if isinstance(topic, dict) and "Text" in topic:
-                    results.append({
-                        "title": topic.get("FirstURL", "").split("/")[-1].replace("_", " "),
-                        "snippet": topic["Text"],
-                        "url": topic.get("FirstURL", ""),
-                        "type": "related"
-                    })
+            results = self._search(query, num)
 
             if not results:
-                # 返回原始信息
-                heading = data.get("Heading", "")
-                results.append({
-                    "title": heading or query,
-                    "snippet": f"关于 '{query}' 的搜索结果有限。请尝试更具体的查询词，或配置 SerpAPI Key 获取更丰富的搜索结果。",
-                    "url": f"https://duckduckgo.com/?q={quote(query)}",
-                    "type": "fallback"
-                })
+                return ToolResponse.success(
+                    text=f"搜索「{query}」没有找到结果。结合已有知识参与讨论即可。",
+                    data={"results": [], "source": "Bing"},
+                    stats={"result_count": 0}
+                )
 
-            # 格式化输出
-            text_parts = []
-            for i, r in enumerate(results[:num], 1):
-                text_parts.append(f"{i}. **{r['title']}**\n   {r['snippet'][:300]}\n   来源: {r['url']}")
-
-            return ToolResponse.success(
-                text="\n\n".join(text_parts),
-                data={"results": results[:num], "source": "DuckDuckGo (免费)"},
-                stats={"result_count": len(results[:num])}
-            )
-
-        except Exception as e:
-            return ToolResponse.error(
-                code=ToolErrorCode.NETWORK_ERROR,
-                message=f"搜索请求失败: {e}",
-                text=f"搜索 '{query}' 时网络错误，请稍后重试。"
-            )
-
-    def _search_serpapi(self, query: str, num: int) -> ToolResponse:
-        """SerpAPI 搜索（高级）"""
-        import urllib.request
-        import json
-
-        try:
-            url = (
-                f"https://serpapi.com/search?"
-                f"q={quote(query)}&num={num}&api_key={self._serpapi_key}"
-            )
-            req = urllib.request.Request(url, headers={"User-Agent": "ArenaView/1.0"})
-            with urllib.request.urlopen(req, timeout=self._timeout) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-
-            results = []
-            for r in data.get("organic_results", [])[:num]:
-                results.append({
-                    "title": r.get("title", ""),
-                    "snippet": r.get("snippet", ""),
-                    "url": r.get("link", ""),
-                    "type": "organic"
-                })
-
-            text_parts = []
+            parts = [f"搜索「{query}」的结果：\n"]
             for i, r in enumerate(results, 1):
-                text_parts.append(f"{i}. **{r['title']}**\n   {r['snippet'][:300]}\n   来源: {r['url']}")
+                parts.append(f"{i}. {r['title']}\n   {r['snippet']}\n   🔗 {r['url']}")
 
             return ToolResponse.success(
-                text="\n\n".join(text_parts),
-                data={"results": results, "source": "SerpAPI"},
+                text="\n\n".join(parts),
+                data={"results": results, "source": "Bing"},
                 stats={"result_count": len(results)}
             )
 
         except Exception as e:
-            # SerpAPI 失败 → 降级 DuckDuckGo
-            return self._search_duckduckgo(query, num)
+            return ToolResponse.success(
+                text=f"搜索「{query}」时网络波动，结合已有知识自然参与讨论即可。",
+                data={"results": [], "source": "Bing (error)"},
+                stats={"result_count": 0, "error": str(e)[:100]}
+            )
+
+    def _search(self, query: str, num: int) -> list[dict]:
+        resp = httpx.get(
+            "https://cn.bing.com/search",
+            params={"q": query, "setlang": "zh-cn", "count": min(num + 5, 50)},
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+                "Accept-Language": "zh-CN,zh;q=0.9",
+            },
+            timeout=self._timeout,
+            follow_redirects=True,
+        )
+        resp.raise_for_status()
+        return self._parse(resp.text, num)
+
+    def _parse(self, html_text: str, num: int) -> list[dict]:
+        results = []
+        blocks = re.split(r'<li[^>]*class="[^"]*b_algo[^"]*"[^>]*>', html_text)[1:]
+
+        for block in blocks[:num]:
+            title_m = re.search(
+                r'<h2[^>]*>.*?<a[^>]*href="([^"]+)"[^>]*>(.*?)</a>',
+                block, re.DOTALL
+            )
+            if not title_m:
+                continue
+            url, title = title_m.group(1), self._clean(title_m.group(2))
+            if len(title) < 3:
+                continue
+
+            snippet = ""
+            sm = re.search(r'<p[^>]*class="[^"]*b_lineclamp[^"]*"[^>]*>(.*?)</p>', block, re.DOTALL)
+            if not sm:
+                sm = re.search(r'<div[^>]*class="[^"]*b_caption[^"]*"[^>]*>(.*?)</div>', block, re.DOTALL)
+            if sm:
+                snippet = self._clean(sm.group(1))
+
+            results.append({
+                "title": title[:200], "snippet": (snippet or title)[:400],
+                "url": url, "type": "organic"
+            })
+        return results
+
+    @staticmethod
+    def _clean(raw: str) -> str:
+        text = re.sub(r'<[^>]+>', '', raw)
+        text = html_mod.unescape(text)
+        text = re.sub(r'&ensp;|&nbsp;|&emsp;|&#0\d+;', ' ', text)
+        return re.sub(r'\s+', ' ', text).strip()

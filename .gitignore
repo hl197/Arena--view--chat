@@ -23,6 +23,9 @@ build/
 *.swp
 *.swo
 
+# Claude skills (project-level, synced from design system)
+.claude/skills/
+
 # OS
 .DS_Store
 Thumbs.db
