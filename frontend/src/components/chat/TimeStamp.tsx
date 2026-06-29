@@ -1,4 +1,4 @@
-/** 微信风格时间戳——居中显示 */
+/** 手绘风格时间戳——居中显示 */
 interface TimeStampProps {
   time: number  // unix ms
 }
@@ -17,8 +17,8 @@ export default function TimeStamp({ time }: TimeStampProps) {
   const label = isToday ? timeStr : `${d.getMonth() + 1}月${d.getDate()}日 ${timeStr}`
 
   return (
-    <div className="flex justify-center my-3">
-      <span className="text-[10px] text-gray-400 bg-gray-200/70 rounded px-2 py-[2px]">
+    <div className="flex justify-center my-4">
+      <span className="text-[11px] text-ink-50 bg-paper-200/70 border border-dashed border-divider rounded-full px-3 py-1 hd-filter">
         {label}
       </span>
     </div>

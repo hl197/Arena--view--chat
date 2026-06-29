@@ -1,15 +1,21 @@
-/** 群聊辩论页面 — 微信风格聊天界面 */
-import { useEffect, useRef, useCallback } from 'react'
+/** 群聊辩论页面 — 手绘手账风两栏布局 */
+import { useEffect, useRef, useCallback, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useDebateStore, nextMsgId, AVATAR_MAP } from '../store/debateStore'
+import { useUIStore } from '../store/uiStore'
 import { useSSE } from '../hooks/useSSE'
 import { post } from '../api/client'
+import HistorySidebar from '../components/sidebar/HistorySidebar'
 import ChatHeader from '../components/chat/ChatHeader'
 import AgentStatusBar from '../components/chat/AgentStatusBar'
 import MessageBubble from '../components/chat/MessageBubble'
 import ChatInput from '../components/chat/ChatInput'
 import TypingIndicator from '../components/chat/TypingIndicator'
 import TimeStamp from '../components/chat/TimeStamp'
+import RippleEntrance from '../components/chat/RippleEntrance'
+import HandDrawnButton from '../components/ui/HandDrawnButton'
+import MemberPanel from '../components/panel/MemberPanel'
+import DecisionMapPanel from '../components/panel/DecisionMapPanel'
 import type { SSEEvent, ChatMessage } from '../api/types'
 import type { AgentStateItem } from '../store/debateStore'
 
@@ -31,16 +37,17 @@ export default function DebatePage() {
   const { sessionId } = useParams<{ sessionId: string }>()
   const navigate = useNavigate()
   const store = useDebateStore()
+  const { sidebarWidth, sidebarCollapsed, rightPanelOpen, rightPanelTab, setRightPanelTab, openRightPanel } = useUIStore()
   const scrollRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const [isDragging, setIsDragging] = useState(false)
 
   // 消息延迟队列（ref 避免闭包问题）
   const queueRef = useRef<Array<() => void>>([])
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const processingRef = useRef(false)
 
-  // 发言 chunk 累积缓冲（解决同一发言被拆成多条消息的问题）
-  // key: senderId, value: 累积的文本
+  // 发言 chunk 累积缓冲
   const speechBufferRef = useRef<Map<string, string>>(new Map())
 
   const processNext = useCallback(() => {
@@ -53,23 +60,21 @@ export default function DebatePage() {
     const fn = queueRef.current.shift()!
     fn()
     if (queueRef.current.length > 0) {
-      timerRef.current = setTimeout(processNext, 2500) // 2.5秒间隔
+      timerRef.current = setTimeout(processNext, 2500)
     } else {
       processingRef.current = false
       timerRef.current = null
     }
   }, [])
 
-  /** 发消息：所有消息排队依次显示，保持顺序一致 */
+  /** 发消息：所有消息排队依次显示 */
   const addMsg = useCallback((msg: ChatMessage) => {
-    // 用户消息立即显示（用户自己的操作应该即时反馈）
     if (msg.type === 'user') {
       store.addMessage(msg)
       return
     }
     queueRef.current.push(() => store.addMessage(msg))
     if (!processingRef.current) {
-      // 首条消息延迟 600ms（让状态栏先更新），后续每条间隔 2.5 秒
       timerRef.current = setTimeout(processNext, 600)
     }
   }, [store, processNext])
@@ -86,6 +91,37 @@ export default function DebatePage() {
       if (timerRef.current) clearTimeout(timerRef.current)
     }
   }, [])
+
+  // 拖拽调整侧边栏宽度
+  const dragStartXRef = useRef(0)
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    dragStartXRef.current = e.clientX
+    setIsDragging(true)
+  }, [])
+
+  useEffect(() => {
+    if (!isDragging) return
+    const startX = dragStartXRef.current
+    const startWidth = sidebarWidth
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const diff = e.clientX - startX
+      const newWidth = Math.max(240, Math.min(480, startWidth + diff))
+      useUIStore.getState().setSidebarWidth(newWidth)
+    }
+    const handleMouseUp = () => {
+      setIsDragging(false)
+    }
+
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [isDragging, sidebarWidth])
 
   // SSE → ChatMessage + AgentState
   const handleSSEEvent = useCallback((event: SSEEvent) => {
@@ -145,7 +181,8 @@ export default function DebatePage() {
         const agentName = (event.perspective_name || '') as string
         const rawStatus = (event.status || '') as string
         store.setAgentStatus(agentName, rawStatus)
-        if (['searching', 'researching', 'debating'].includes(rawStatus)) {
+        // composing 也显示"发言中"，让用户看到谁在说话
+        if (['searching', 'researching', 'debating', 'composing'].includes(rawStatus)) {
           const names = store.typingNames
           if (!names.includes(agentName)) {
             store.setTypingNames([...names, agentName])
@@ -179,10 +216,8 @@ export default function DebatePage() {
         const isFinal = event.is_final as boolean
 
         if (text.trim()) {
-          // 同一人连续发片段时，合并到上一条消息
           const lastMsg = store.messages[store.messages.length - 1]
           if (isFinal === false && lastMsg && lastMsg.senderId === senderId && lastMsg.type === 'agent') {
-            // 追加到上一条消息
             store.appendToLastMessage(text)
           } else {
             addMsg({
@@ -193,7 +228,6 @@ export default function DebatePage() {
           }
         }
 
-        // 如果是最后一段，更新状态
         if (isFinal) {
           store.setTypingNames(store.typingNames.filter(n => n !== senderName))
           store.setAgentStatus(senderName, 'done')
@@ -209,7 +243,6 @@ export default function DebatePage() {
         break
       }
 
-      // ===== 新版群聊轮次事件 =====
       case 'round_start': {
         const rn = event.round_number as number
         const desc = (event.description || `第${rn}轮讨论`) as string
@@ -225,14 +258,11 @@ export default function DebatePage() {
         const isFinal = event.is_final as boolean
 
         if (text.trim()) {
-          // 累积到缓冲区，等 is_final 时一次性创建消息
-          // 避免因延迟队列导致同一发言被拆成多条消息
           const buffer = speechBufferRef.current
           const accumulated = (buffer.get(senderId) || '') + text
           buffer.set(senderId, accumulated)
 
           if (isFinal) {
-            // 发言结束 —— 取出完整文本，清空缓冲区，创建一条消息
             const fullText = buffer.get(senderId) || ''
             buffer.delete(senderId)
             addMsg({
@@ -240,10 +270,10 @@ export default function DebatePage() {
               avatar: AVATAR_MAP[senderId],
               content: fullText, timestamp: now, type: 'agent',
             })
-            store.setTypingNames([])
+            // 只移除当前发言者，不清空全员（并行场景其他人可能还在搜）
+            store.setTypingNames(store.typingNames.filter(n => n !== senderName))
             store.setAgentStatus(senderName, 'done')
           } else {
-            // 还在发言中 —— 只更新状态，不创建消息
             store.setAgentStatus(senderName, 'composing')
             store.setTypingNames([senderName])
           }
@@ -256,7 +286,6 @@ export default function DebatePage() {
         const perspective = store.perspectives.find(p => p.name === senderName)
         const senderId = perspective?.id || (event.perspective_id as string) || 'unknown'
 
-        // 安全兜底：如果缓冲区还有残留（异常情况），强制发出
         const buffer = speechBufferRef.current
         const remaining = buffer.get(senderId)
         if (remaining) {
@@ -338,6 +367,10 @@ export default function DebatePage() {
 
       case 'decision_map_chunk':
         store.setDecisionMap((store.decisionMap || '') + (event.text || ''))
+        // 辩论结束时自动打开决策地图面板
+        if (event.is_final) {
+          openRightPanel('decision-map')
+        }
         break
 
       case 'tradeoff_update':
@@ -371,6 +404,8 @@ export default function DebatePage() {
             content: `📊 决策地图\n\n${store.decisionMap}`,
             timestamp: now, type: 'judge',
           })
+          // 完成后自动打开决策地图
+          openRightPanel('decision-map')
         }
         addMsg(mkSys(
           `🎉 讨论结束！总耗时 ${((event.total_time_ms as number || 0) / 1000).toFixed(1)}s`
@@ -382,7 +417,7 @@ export default function DebatePage() {
         addMsg(mkSys(`❌ 出错了：${event.message || '未知错误'}`))
         break
     }
-  }, [store, addMsg])
+  }, [store, addMsg, openRightPanel])
 
   // SSE 连接
   const { abort } = useSSE(
@@ -422,87 +457,186 @@ export default function DebatePage() {
     ...(store.judgeState ? [store.judgeState] : []),
   ]
 
+  const sidebarActualWidth = sidebarCollapsed ? 56 : sidebarWidth
+
   return (
-    <div className="h-screen flex flex-col bg-[#EDEDED]">
-      <ChatHeader title={title} memberCount={memberCount} phase={store.phase} />
-
-      {/* Agent 状态栏 */}
-      <div className="fixed top-12 left-0 right-0 z-40 shadow-sm">
-        <AgentStatusBar agents={allAgents} phase={store.phase} />
+    <div className="h-screen flex bg-paper-100 overflow-hidden">
+      {/* 左侧：历史侧边栏 */}
+      <div
+        style={{ width: sidebarActualWidth }}
+        className="h-full flex-shrink-0 transition-[width] duration-200"
+      >
+        <HistorySidebar
+          activeSessionId={sessionId}
+          onSelect={(id) => navigate(`/debate/${id}`)}
+        />
       </div>
 
-      {/* 消息区域 */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto pt-[108px] pb-20"
-        style={{ scrollBehavior: 'smooth' }}>
-        <div className="max-w-2xl mx-auto">
-          {store.messages.length === 0 && store.status === 'idle' && (
-            <div className="flex justify-center mt-8">
-              <span className="text-xs text-gray-400 bg-gray-200/60 rounded px-3 py-1">
-                等待辩论开始...
-              </span>
-            </div>
-          )}
-
-          {store.messages.map((msg, i) => {
-            const prev = i > 0 ? store.messages[i - 1] : undefined
-            return (
-              <div key={msg.id}>
-                {needsTimeStamp(prev, msg) && <TimeStamp time={msg.timestamp} />}
-                <MessageBubble message={msg} isConsecutive={isConsecutive(prev, msg)} />
-              </div>
-            )
-          })}
-
-          {store.typingNames.length > 0 && store.status !== 'completed' && (
-            <TypingIndicator names={store.typingNames} />
-          )}
-
-          {store.status === 'completed' && (
-            <div className="flex justify-center gap-3 my-6">
-              <button onClick={() => navigate(`/result/${sessionId}`)}
-                className="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-5 py-2 rounded-lg text-sm">
-                📊 查看决策报告
-              </button>
-              <button onClick={() => navigate('/')}
-                className="bg-[#07C160] text-white hover:bg-[#06AD56] px-5 py-2 rounded-lg text-sm">
-                发起新辩论
-              </button>
-            </div>
-          )}
-
-          {store.status === 'error' && (
-            <div className="flex flex-col items-center gap-3 my-8">
-              <span className="text-4xl">😞</span>
-              <p className="text-sm text-gray-500">{store.error || '出了点问题'}</p>
-              <button onClick={() => navigate('/')}
-                className="bg-[#07C160] text-white px-5 py-2 rounded-lg text-sm">
-                返回首页重试
-              </button>
-            </div>
-          )}
-
-          <div ref={bottomRef} />
-        </div>
-      </div>
-
-      <ChatInput
-        onSend={handleUserSend}
-        disabled={store.status === 'completed' || store.status === 'error'}
-        placeholder={
-          store.status === 'completed' ? '辩论已结束'
-          : store.status === 'error' ? '辩论出错'
-          : '参与讨论...'
-        }
-      />
-
-      {store.status !== 'completed' && store.status !== 'error' && store.status !== 'idle' && (
-        <div className="fixed bottom-24 right-4 z-50">
-          <button onClick={handleCancel}
-            className="bg-white/90 border border-gray-300 text-gray-500 hover:text-red-500 px-3 py-1.5 rounded-full text-xs shadow-lg">
-            结束辩论
-          </button>
-        </div>
+      {/* 拖拽分割线 */}
+      {!sidebarCollapsed && (
+        <div
+          className={`w-1.5 h-full cursor-col-resize bg-divider/30 hover:bg-marker-blue/40 transition-colors ${
+            isDragging ? 'bg-marker-blue/60' : ''
+          }`}
+          onMouseDown={handleMouseDown}
+        />
       )}
+
+      {/* 右侧：群聊主区域 */}
+      <div className="flex-1 flex flex-col min-w-0 relative">
+        <ChatHeader title={title} memberCount={memberCount} phase={store.phase} />
+
+        {/* Agent 状态栏 */}
+        <AgentStatusBar agents={allAgents} phase={store.phase} />
+
+        {/* 消息区域 */}
+        <div className="flex-1 relative overflow-hidden">
+          {/* 涟漪入场动效（generating 阶段覆盖显示） */}
+          {store.status === 'generating' && store.perspectives.length >= 0 && (
+            <RippleEntrance
+              agents={store.perspectives.map(p => ({
+                id: p.id,
+                name: p.name,
+                avatar: AVATAR_MAP[p.id],
+              }))}
+              status={store.status}
+              question={store.question}
+            />
+          )}
+
+          <div
+            ref={scrollRef}
+            className="h-full overflow-y-auto paper-bg hd-scrollbar"
+            style={{ scrollBehavior: 'smooth' }}
+          >
+            <div className="max-w-3xl mx-auto py-4">
+              {store.messages.length === 0 && store.status === 'idle' && (
+                <div className="flex justify-center mt-8">
+                  <span className="text-xs text-ink-50 bg-paper-200/60 border border-dashed border-divider rounded-full px-4 py-1.5 hd-filter">
+                    等待讨论开始...
+                  </span>
+                </div>
+              )}
+
+              {store.messages.map((msg, i) => {
+                const prev = i > 0 ? store.messages[i - 1] : undefined
+                return (
+                  <div key={msg.id}>
+                    {needsTimeStamp(prev, msg) && <TimeStamp time={msg.timestamp} />}
+                    <MessageBubble message={msg} isConsecutive={isConsecutive(prev, msg)} />
+                  </div>
+                )
+              })}
+
+              {store.typingNames.length > 0 && store.status !== 'completed' && (
+                <TypingIndicator names={store.typingNames} />
+              )}
+
+              {store.status === 'completed' && (
+                <div className="flex justify-center gap-3 my-6 flex-wrap">
+                  <HandDrawnButton
+                    variant="secondary"
+                    size="md"
+                    onClick={() => { setRightPanelTab('decision-map'); openRightPanel('decision-map') }}
+                  >
+                    📊 查看决策地图
+                  </HandDrawnButton>
+                  <HandDrawnButton
+                    variant="primary"
+                    size="md"
+                    onClick={() => navigate('/')}
+                    tilt="right"
+                  >
+                    ✏️ 发起新讨论
+                  </HandDrawnButton>
+                </div>
+              )}
+
+              {store.status === 'error' && (
+                <div className="flex flex-col items-center gap-3 my-8">
+                  <span className="text-4xl">😞</span>
+                  <p className="text-sm text-ink-50">{store.error || '出了点问题'}</p>
+                  <HandDrawnButton variant="primary" onClick={() => navigate('/')}>
+                    返回首页重试
+                  </HandDrawnButton>
+                </div>
+              )}
+
+              <div ref={bottomRef} />
+            </div>
+          </div>
+        </div>
+
+        <ChatInput
+          onSend={handleUserSend}
+          disabled={store.status === 'completed' || store.status === 'error'}
+          placeholder={
+            store.status === 'completed' ? '讨论已结束'
+            : store.status === 'error' ? '讨论出错'
+            : '说说你的想法...'
+          }
+        />
+
+        {/* 右下角浮动操作按钮 */}
+        {store.status !== 'completed' && store.status !== 'error' && store.status !== 'idle' && (
+          <div className="absolute bottom-20 right-4">
+            <button
+              onClick={handleCancel}
+              className="bg-sticky-white/90 border-2 border-divider text-ink-200 hover:text-marker-red hover:border-marker-red px-3 py-1.5 rounded-full text-xs shadow-sticky transition-colors hd-filter"
+            >
+              结束讨论
+            </button>
+          </div>
+        )}
+
+        {/* 右侧面板占位（阶段5实现） */}
+        {rightPanelOpen && (
+          <div className="absolute top-0 right-0 h-full w-80 bg-paper-100 border-l-2 border-divider shadow-lg z-30 animate-[slideInRight_0.3s_ease-out]">
+            {/* Tab 头部 */}
+            <div className="flex border-b-2 border-divider">
+              <button
+                className={`flex-1 py-3 text-sm font-medium transition-colors ${
+                  rightPanelTab === 'members'
+                    ? 'text-marker-blue border-b-2 border-marker-blue'
+                    : 'text-ink-100 hover:text-ink-300'
+                }`}
+                onClick={() => setRightPanelTab('members')}
+              >
+                👥 成员
+              </button>
+              <button
+                className={`flex-1 py-3 text-sm font-medium transition-colors ${
+                  rightPanelTab === 'decision-map'
+                    ? 'text-marker-blue border-b-2 border-marker-blue'
+                    : 'text-ink-100 hover:text-ink-300'
+                }`}
+                onClick={() => setRightPanelTab('decision-map')}
+              >
+                🗺️ 决策地图
+              </button>
+              <button
+                onClick={() => useUIStore.getState().closeRightPanel()}
+                className="px-3 text-ink-50 hover:text-ink-300"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* 面板内容 */}
+            <div className="p-4 overflow-y-auto h-[calc(100%-48px)] hd-scrollbar">
+              {rightPanelTab === 'members' ? (
+                <MemberPanel
+                  perspectives={store.perspectives}
+                  agentStates={store.agentStates}
+                  judgeState={store.judgeState}
+                />
+              ) : (
+                <DecisionMapPanel content={store.decisionMap} />
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

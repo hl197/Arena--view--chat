@@ -33,9 +33,9 @@ class ArenaConfig:
 
     # === Agent 执行 ===
     max_agent_steps: int = 8           # ReAct Agent 最大步数（搜→读→搜→读→发言 = 5步，留3步容错）
-    agent_timeout_seconds: int = 60    # 单Agent超时
-    debate_timeout_seconds: int = 120  # 整场辩论超时
-    search_timeout_seconds: int = 5    # 单次搜索超时
+    agent_timeout_seconds: int = 90    # 单Agent超时（搜+读+发言 ~45秒，留一倍余量）
+    debate_timeout_seconds: int = 300  # 整场辩论超时（5 人 × 3 轮 × 60秒 = 900秒理论，实际 5 分钟足够）
+    search_timeout_seconds: int = 15   # 单次搜索/抓取超时（Tavily API 通常 3-8 秒，网页抓取 5-12 秒）
 
     # === Token 控制 ===
     max_tokens_per_debate: int = 50000

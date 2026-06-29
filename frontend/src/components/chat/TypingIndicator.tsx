@@ -1,4 +1,4 @@
-/** 微信风格 "正在输入..." 动画 */
+/** 手绘风格 "正在输入..." 动画 */
 interface TypingIndicatorProps {
   names: string[]
 }
@@ -13,14 +13,14 @@ export default function TypingIndicator({ names }: TypingIndicatorProps) {
     : `${names[0]}等${names.length}人`
 
   return (
-    <div className="flex items-center px-3 mt-2 mb-1">
+    <div className="flex items-center px-4 mt-3 mb-1">
       {/* 动画点 */}
-      <div className="flex items-center gap-1 mr-2">
-        <span className="w-[6px] h-[6px] bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-        <span className="w-[6px] h-[6px] bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-        <span className="w-[6px] h-[6px] bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+      <div className="flex items-center gap-1 mr-2 bg-sticky-white border-2 border-divider rounded-full px-2.5 py-1 hd-filter">
+        <span className="w-1.5 h-1.5 bg-marker-blue rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+        <span className="w-1.5 h-1.5 bg-marker-purple rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+        <span className="w-1.5 h-1.5 bg-marker-green rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
       </div>
-      <span className="text-xs text-gray-400">{label} 正在输入...</span>
+      <span className="text-xs text-ink-50">{label} 正在思考...</span>
     </div>
   )
 }

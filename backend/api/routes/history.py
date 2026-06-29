@@ -83,6 +83,14 @@ async def get_history_detail(session_id: str):
 
 @router.delete("/history/{session_id}")
 async def delete_history(session_id: str):
-    """删除历史辩论"""
+    """删除历史辩论——同时删除内存和 DB 中的记录"""
+    # 删除内存中的记录
     memory.delete(session_id)
-    return {"status": "deleted"}
+    # 删除 DB 中的记录（如果 DB 可用）
+    if db:
+        try:
+            db.delete_debate(session_id)
+        except Exception:
+            # DB 删除失败不影响结果，内存已删
+            pass
+    return {"status": "deleted", "session_id": session_id}

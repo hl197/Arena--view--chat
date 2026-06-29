@@ -311,92 +311,114 @@ class HarnessEngine:
                 }
             ))
 
-            # 本轮发言顺序
-            for i, p in enumerate(perspectives):
-                debug.hook("agent_turn", name=p.name, round=round_num)
-                # 1. 通知前端"谁在说话"
-                await emit(StreamEvent(
-                    type=StreamEventType.AGENT_STATUS,
-                    data={"perspective_name": p.name, "status": "thinking"}
-                ))
-
-                # 2. 构建完整 prompt（含对话历史）
-                history_text = self._build_conversation_history(
-                    conversation_history, current_speaker=p.name
-                )
-                speech_prompt = self._build_speech_prompt(
+            # Round 1 全部并行（开场陈述互不依赖），Round 2+ 串行（需回应前面的人）
+            if round_num == 1:
+                await self._run_round_1_parallel(
                     question=question,
-                    perspective=p,
+                    perspectives=perspectives,
                     round_num=round_num,
                     total_rounds=num_rounds,
-                    conversation_history=history_text,
+                    conversation_history=conversation_history,
+                    emit=emit,
                 )
-
-                # 3. Agent 独立调用 LLM（每个 Agent 是独立的 LLM 调用！）
-                agent = create_react_agent(
-                    name=f"chat_{p.id}_r{round_num}",
-                    llm=self.llm,
-                    perspective_name=p.name,
-                    perspective_stance=p.stance,
-                    tool_registry=self.tool_registry,
-                    config=self.config,
-                )
-
-                try:
-                    argument = await agent.run(input_text=speech_prompt)
-                except Exception:
-                    # 容错：生成降级回应
-                    personality = get_personality_for(p.name)
-                    catchphrase = personality.get("catchphrases", ["我觉得吧"])[0]
-                    argument = f"{catchphrase}，关于这个问题，从我的角度来看，{p.stance}。不过前面大家聊了这么多，我也在思考。{p.blind_spots[0] if p.blind_spots else '有些方面我可能还没想透'}。"
-
-                # 4. 分块发送到前端
-                await emit(StreamEvent(
-                    type=StreamEventType.AGENT_STATUS,
-                    data={"perspective_name": p.name, "status": "composing"}
-                ))
-
-                chunks = self._split_into_chunks(argument, max_chars=2000)
-                for j, chunk in enumerate(chunks):
-                    is_final = (j == len(chunks) - 1)
+            else:
+                # 本轮发言顺序
+                for i, p in enumerate(perspectives):
+                    debug.hook("agent_turn", name=p.name, round=round_num)
+                    # 1. 通知前端"谁在说话"
                     await emit(StreamEvent(
-                        type=StreamEventType.SPEECH_CHUNK,
+                        type=StreamEventType.AGENT_STATUS,
+                        data={"perspective_name": p.name, "status": "thinking"}
+                    ))
+
+                    # 2. 构建完整 prompt（含对话历史）
+                    history_text = self._build_conversation_history(
+                        conversation_history, current_speaker=p.name
+                    )
+                    speech_prompt = self._build_speech_prompt(
+                        question=question,
+                        perspective=p,
+                        round_num=round_num,
+                        total_rounds=num_rounds,
+                        conversation_history=history_text,
+                    )
+
+                    # 3. Agent 独立调用 LLM（每个 Agent 是独立的 LLM 调用！）
+                    #    传入 emit 作为 stream_callback，让前端实时看到搜索/阅读进度
+                    agent = create_react_agent(
+                        name=f"chat_{p.id}_r{round_num}",
+                        llm=self.llm,
+                        perspective_name=p.name,
+                        perspective_stance=p.stance,
+                        tool_registry=self.tool_registry,
+                        config=self.config,
+                    )
+
+                    try:
+                        # 强制超时保护：超时后不会无限等待，降级到 fallback
+                        argument = await asyncio.wait_for(
+                            agent.run(input_text=speech_prompt, stream_callback=emit),
+                            timeout=self.config.agent_timeout_seconds,
+                        )
+                    except asyncio.TimeoutError:
+                        debug.hook("agent_nudge", reason=f"{p.name} 超时 ({self.config.agent_timeout_seconds}s)")
+                        personality = get_personality_for(p.name)
+                        catchphrase = personality.get("catchphrases", ["我觉得吧"])[0]
+                        argument = f"{catchphrase}，关于这个问题，从我的角度来看，{p.stance}。前面大家聊了不少，我也在认真思考。{p.blind_spots[0] if p.blind_spots else '有些方面我可能还没完全想清楚'}。"
+                    except Exception:
+                        debug.error(f"{p.name} 异常", str(e)[:100])
+                        # 容错：生成降级回应
+                        personality = get_personality_for(p.name)
+                        catchphrase = personality.get("catchphrases", ["我觉得吧"])[0]
+                        argument = f"{catchphrase}，关于这个问题，从我的角度来看，{p.stance}。不过前面大家聊了这么多，我也在思考。{p.blind_spots[0] if p.blind_spots else '有些方面我可能还没想透'}。"
+
+                    # 4. 分块发送到前端
+                    await emit(StreamEvent(
+                        type=StreamEventType.AGENT_STATUS,
+                        data={"perspective_name": p.name, "status": "composing"}
+                    ))
+
+                    chunks = self._split_into_chunks(argument, max_chars=2000)
+                    for j, chunk in enumerate(chunks):
+                        is_final = (j == len(chunks) - 1)
+                        await emit(StreamEvent(
+                            type=StreamEventType.SPEECH_CHUNK,
+                            data={
+                                "perspective_name": p.name,
+                                "perspective_id": p.id,
+                                "text": chunk,
+                                "is_final": is_final,
+                                "chunk_index": j,
+                                "total_chunks": len(chunks),
+                                "round_number": round_num,
+                            }
+                        ))
+                        if not is_final:
+                            await asyncio.sleep(1.5)
+
+                    await emit(StreamEvent(
+                        type=StreamEventType.SPEECH_END,
                         data={
                             "perspective_name": p.name,
                             "perspective_id": p.id,
-                            "text": chunk,
-                            "is_final": is_final,
-                            "chunk_index": j,
-                            "total_chunks": len(chunks),
-                            "round_number": round_num,
                         }
                     ))
-                    if not is_final:
-                        await asyncio.sleep(1.5)
+                    await emit(StreamEvent(
+                        type=StreamEventType.AGENT_STATUS,
+                        data={"perspective_name": p.name, "status": "done"}
+                    ))
 
-                await emit(StreamEvent(
-                    type=StreamEventType.SPEECH_END,
-                    data={
-                        "perspective_name": p.name,
-                        "perspective_id": p.id,
-                    }
-                ))
-                await emit(StreamEvent(
-                    type=StreamEventType.AGENT_STATUS,
-                    data={"perspective_name": p.name, "status": "done"}
-                ))
+                    # 5. 记录到对话历史
+                    conversation_history.append({
+                        "round": round_num,
+                        "speaker": p.name,
+                        "speaker_id": p.id,
+                        "text": argument,
+                    })
 
-                # 5. 记录到对话历史
-                conversation_history.append({
-                    "round": round_num,
-                    "speaker": p.name,
-                    "speaker_id": p.id,
-                    "text": argument,
-                })
-
-                # 下一个人发言前等待 2 秒（模拟真人群聊节奏）
-                if i < len(perspectives) - 1:
-                    await asyncio.sleep(2)
+                    # 下一个人发言前等待 2 秒（模拟真人群聊节奏）
+                    if i < len(perspectives) - 1:
+                        await asyncio.sleep(2)
 
             # 本轮结束
             debug.hook("round_end", num=round_num)
@@ -410,6 +432,145 @@ class HarnessEngine:
                 await asyncio.sleep(3)
 
         return conversation_history
+
+    async def _run_round_1_parallel(
+        self,
+        question: str,
+        perspectives: list[Perspective],
+        round_num: int,
+        total_rounds: int,
+        conversation_history: list[dict],
+        emit,
+    ) -> None:
+        """Round 1 并行执行 —— 5 个 Agent 同时搜+读，然后按顺序依次发言
+
+        开场陈述互不依赖。并行研究把 5×60s=300s 的耗时压缩到 ~60s。
+
+        ⚠️ 并行期间 agent 不接 stream_callback，避免 5 个 agent 的
+        AGENT_STATUS 疯狂交叉轰炸前端，导致 typingNames 状态混乱和事件丢失。
+        研究完成后按 perspectives 顺序 emit 发言。
+        """
+        from .structured_models import get_personality_for
+
+        # 通知前端：所有 Agent 开始并行研究
+        for p in perspectives:
+            await emit(StreamEvent(
+                type=StreamEventType.AGENT_STATUS,
+                data={"perspective_name": p.name, "status": "searching"}
+            ))
+
+        async def run_one(p: Perspective) -> dict:
+            """单个 Agent：搜→读→发言，静默运行（不 emit 避免交叉轰炸）"""
+            debug.hook("agent_turn", name=p.name, round=round_num, mode="parallel")
+
+            history_text = self._build_conversation_history(
+                conversation_history, current_speaker=p.name
+            )
+            speech_prompt = self._build_speech_prompt(
+                question=question,
+                perspective=p,
+                round_num=round_num,
+                total_rounds=total_rounds,
+                conversation_history=history_text,
+            )
+
+            agent = create_react_agent(
+                name=f"chat_{p.id}_r{round_num}",
+                llm=self.llm,
+                perspective_name=p.name,
+                perspective_stance=p.stance,
+                tool_registry=self.tool_registry,
+                config=self.config,
+            )
+
+            try:
+                # stream_callback=None：并行期间静默，不往 SSE 发事件
+                argument = await asyncio.wait_for(
+                    agent.run(input_text=speech_prompt, stream_callback=None),
+                    timeout=self.config.agent_timeout_seconds,
+                )
+            except asyncio.TimeoutError:
+                debug.hook("agent_nudge", reason=f"{p.name} 超时 ({self.config.agent_timeout_seconds}s)")
+                personality = get_personality_for(p.name)
+                catchphrase = personality.get("catchphrases", ["我觉得吧"])[0]
+                argument = f"{catchphrase}，关于这个问题，从我的角度来看，{p.stance}。{p.blind_spots[0] if p.blind_spots else '有些方面我可能还没完全想清楚'}。"
+            except Exception as e:
+                debug.error(f"{p.name} 并行异常", str(e)[:100])
+                personality = get_personality_for(p.name)
+                catchphrase = personality.get("catchphrases", ["我觉得吧"])[0]
+                argument = f"{catchphrase}，关于这个问题，从我的角度来看，{p.stance}。"
+
+            return {
+                "speaker": p.name,
+                "speaker_id": p.id,
+                "text": argument,
+                "round": round_num,
+            }
+
+        # ═══ 并行执行所有 Agent ═══
+        debug.hook("parallel_round_start", count=len(perspectives))
+        results = await asyncio.gather(*[run_one(p) for p in perspectives])
+        debug.hook("parallel_round_done", count=len([r for r in results if r]))
+
+        # 研究完成，统一重置状态
+        for p in perspectives:
+            await emit(StreamEvent(
+                type=StreamEventType.AGENT_STATUS,
+                data={"perspective_name": p.name, "status": "idle"}
+            ))
+
+        # 按 perspectives 原始顺序排列
+        id_order = [p.id for p in perspectives]
+        results.sort(key=lambda r: id_order.index(r["speaker_id"]) if r else 999)
+
+        # 按顺序依次 emit 发言（前端按正确顺序展示，每条间隔充足）
+        valid_results = [r for r in results if r]
+        for i, result in enumerate(valid_results):
+            p = next((pp for pp in perspectives if pp.id == result["speaker_id"]), None)
+            if not p:
+                continue
+
+            # 通知前端：该 Agent 正在发言
+            await emit(StreamEvent(
+                type=StreamEventType.AGENT_STATUS,
+                data={"perspective_name": p.name, "status": "composing"}
+            ))
+            # 给前端短暂时间更新 typing 状态
+            await asyncio.sleep(0.5)
+
+            chunks = self._split_into_chunks(result["text"], max_chars=2000)
+            for j, chunk in enumerate(chunks):
+                is_final = (j == len(chunks) - 1)
+                await emit(StreamEvent(
+                    type=StreamEventType.SPEECH_CHUNK,
+                    data={
+                        "perspective_name": p.name,
+                        "perspective_id": p.id,
+                        "text": chunk,
+                        "is_final": is_final,
+                        "chunk_index": j,
+                        "total_chunks": len(chunks),
+                        "round_number": round_num,
+                    }
+                ))
+                if not is_final:
+                    await asyncio.sleep(1.5)
+
+            await emit(StreamEvent(
+                type=StreamEventType.SPEECH_END,
+                data={"perspective_name": p.name, "perspective_id": p.id}
+            ))
+            await emit(StreamEvent(
+                type=StreamEventType.AGENT_STATUS,
+                data={"perspective_name": p.name, "status": "done"}
+            ))
+
+            # 记录到对话历史
+            conversation_history.append(result)
+
+            # 下一个人发言前等待（模拟真人群聊节奏）
+            if i < len(valid_results) - 1:
+                await asyncio.sleep(3.0)
 
     def _build_conversation_history(
         self,

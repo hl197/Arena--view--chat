@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Caveat:wght@400;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,6 +7,95 @@
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
+
+/* ============================================
+   手绘风格全局样式
+   ============================================ */
+
+/* 手绘 SVG filter — 所有带 .hd-filter 的元素应用抖动效果 */
+.hd-filter {
+  filter: url(#hand-drawn-filter);
+}
+
+/* 手绘边框（应用于有 border 的元素） */
+.hd-border {
+  border: 2px solid #2b2b2b;
+  filter: url(#hand-drawn-filter);
+}
+
+.hd-border-light {
+  border: 2px solid #d4cfc7;
+  filter: url(#hand-drawn-filter);
+}
+
+/* 便利贴倾斜效果 */
+.tilt-left {
+  transform: rotate(-0.8deg);
+}
+.tilt-right {
+  transform: rotate(0.6deg);
+}
+.tilt-none {
+  transform: rotate(0deg);
+}
+
+/* 纸胶带装饰 */
+.washi-tape {
+  position: relative;
+}
+.washi-tape::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-2deg);
+  width: 60px;
+  height: 12px;
+  background: rgba(255, 182, 193, 0.5);
+  border-radius: 2px;
+  pointer-events: none;
+}
+.washi-tape-blue::before {
+  background: rgba(168, 212, 240, 0.5);
+}
+.washi-tape-yellow::before {
+  background: rgba(242, 201, 76, 0.45);
+}
+.washi-tape-green::before {
+  background: rgba(107, 196, 122, 0.4);
+}
+.washi-tape-purple::before {
+  background: rgba(155, 123, 242, 0.4);
+}
+
+/* 手绘分割线 */
+.hd-divider {
+  height: 2px;
+  background: repeating-linear-gradient(
+    90deg,
+    #d4cfc7 0px,
+    #d4cfc7 4px,
+    transparent 4px,
+    transparent 8px
+  );
+  filter: url(#hand-drawn-filter);
+}
+
+/* 纸质背景纹理 */
+.paper-bg {
+  background-color: #faf6f0;
+  background-image:
+    repeating-linear-gradient(
+      transparent 0px,
+      transparent 27px,
+      rgba(200, 190, 170, 0.15) 27px,
+      rgba(200, 190, 170, 0.15) 28px
+    );
+}
+
+/* ============================================
+   原有动画
+   ============================================ */
 
 /* 辩论流式文字动画 */
 @keyframes fadeIn {
@@ -36,9 +127,61 @@ body {
 /* 跳过动画（历史消息） */
 @media (prefers-reduced-motion: reduce) {
   .message-enter { animation: none; }
+  .animate-sticky-bounce { animation: none; }
+  .animate-ripple { animation: none; }
+  .animate-float { animation: none; }
 }
 
 /* iPhone 底部安全区 */
 .h-safe-area {
   height: env(safe-area-inset-bottom, 0px);
+}
+
+/* ============================================
+   涟漪入场动效
+   ============================================ */
+
+/* 中心弹出 */
+@keyframes popIn {
+  0% { transform: scale(0) rotate(-10deg); opacity: 0; }
+  60% { transform: scale(1.15) rotate(3deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+/* 涟漪扩散出 */
+@keyframes rippleOut {
+  0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+  50% { transform: translate(calc(-50% + var(--rx, 0px) * 0.6), calc(-50% + var(--ry, 0px) * 0.6)) scale(1.1); opacity: 1; }
+  100% { opacity: 1; }
+}
+
+/* 文字下滑淡入 */
+@keyframes fadeSlideDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 右侧面板滑入 */
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* ============================================
+   滚动条（手绘风格）
+   ============================================ */
+
+.hd-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+.hd-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.hd-scrollbar::-webkit-scrollbar-thumb {
+  background: #d4cfc7;
+  border-radius: 4px;
+  border: 1px solid #faf6f0;
+}
+.hd-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #b8b0a0;
 }
