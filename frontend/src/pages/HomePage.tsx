@@ -19,7 +19,7 @@ export default function HomePage() {
   const [options, setOptions] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const { setSessionId, setQuestion: storeQuestion, setPhase } = useDebateStore()
+  const { setSessionId, setQuestion: storeQuestion, setPhase, setStatus, reset } = useDebateStore()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -32,6 +32,11 @@ export default function HomePage() {
     setError('')
 
     try {
+      // 重置旧状态，避免上次辩论残留
+      reset()
+      setStatus('generating')  // 立即触发群聊入场动画
+      setPhase('generating')
+
       const res = await post<{ session_id: string; stream_url: string }>('/debate/start', {
         question: question.trim(),
         options: options
@@ -44,7 +49,6 @@ export default function HomePage() {
 
       setSessionId(res.session_id)
       storeQuestion(question.trim())
-      setPhase('generating')
       navigate(`/debate/${res.session_id}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : '启动失败，请稍后重试')

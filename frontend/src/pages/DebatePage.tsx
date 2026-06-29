@@ -92,6 +92,23 @@ export default function DebatePage() {
     }
   }, [])
 
+  // 监听 sessionId 变化：点击侧边栏切换历史时，React Router 不会重新挂载组件，
+  // 需要手动重置 store + 清空历史加载标记，否则页面不刷新
+  const prevSessionIdRef = useRef(sessionId)
+  useEffect(() => {
+    // 初始挂载时 prev === 当前值，跳过（避免清掉 HomePage 设置的 generating 状态）
+    if (prevSessionIdRef.current === sessionId) return
+    prevSessionIdRef.current = sessionId
+
+    // 重置历史加载标记，允许 loadHistoryResult 再次执行
+    historyLoadedRef.current = false
+    // 清空旧会话的数据
+    store.reset()
+    if (sessionId) {
+      store.setSessionId(sessionId)
+    }
+  }, [sessionId, store])
+
   // 拖拽调整侧边栏宽度
   const dragStartXRef = useRef(0)
 
@@ -165,13 +182,15 @@ export default function DebatePage() {
       const baseTime = Date.now() - 86400000 // 历史消息用昨天的时间戳
       let msgIndex = 0
       for (const entry of result.debate_transcript) {
+        const isJudge = entry.speaker_id === 'judge'
         store.addMessage({
           id: `hist_${msgIndex++}`,
           senderId: entry.speaker_id,
           senderName: entry.speaker,
+          avatar: isJudge ? '/avatars/judge.png' : AVATAR_MAP[entry.speaker_id],
           content: entry.text,
           timestamp: baseTime + msgIndex * 60000,
-          type: entry.speaker_id === 'judge' ? 'judge' : 'agent',
+          type: isJudge ? 'judge' : 'agent',
         })
       }
 
@@ -586,7 +605,7 @@ export default function DebatePage() {
             style={{ scrollBehavior: 'smooth' }}
           >
             <div className="max-w-3xl mx-auto py-4">
-              {store.messages.length === 0 && store.status === 'idle' && (
+              {!sessionId && store.messages.length === 0 && store.status === 'idle' && (
                 <div className="flex flex-col items-center justify-center mt-20 gap-4">
                   <span className="text-5xl">💬</span>
                   <p className="text-ink-50 text-sm">选择一个历史讨论，或发起新的决策分析</p>

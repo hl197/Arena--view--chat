@@ -2,6 +2,8 @@
 import HandDrawnAvatar from '../ui/HandDrawnAvatar'
 import HandDrawnBadge from '../ui/HandDrawnBadge'
 import type { AgentStateItem } from '../../store/debateStore'
+import { AVATAR_MAP } from '../../store/debateStore'
+import { useUserStore, getUserAvatar } from '../../store/userStore'
 
 interface MemberPanelProps {
   perspectives: Array<{ id: string; name: string; stance?: string }>
@@ -25,6 +27,7 @@ const AVATAR_COLORS: Array<'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'pin
 
 export default function MemberPanel({ perspectives, agentStates, judgeState }: MemberPanelProps) {
   const totalMembers = 1 + perspectives.length + (judgeState ? 1 : 0)
+  const userGender = useUserStore((s) => s.gender)
 
   return (
     <div className="space-y-4">
@@ -41,7 +44,7 @@ export default function MemberPanel({ perspectives, agentStates, judgeState }: M
       <div>
         <div className="text-[11px] text-ink-50 mb-2 px-1 font-hand tracking-wider">主持人</div>
         <div className="flex items-center gap-3 p-2.5 bg-sticky-cream/60 rounded-hd-md border-2 border-marker-gold/50 hd-filter">
-          <HandDrawnAvatar content="👤" size="md" color="gold" crown />
+          <HandDrawnAvatar src={getUserAvatar(userGender)} content="👤" size="md" color={userGender === 'male' ? 'blue' : 'pink'} crown />
           <div className="flex-1 min-w-0">
             <div className="text-sm font-bold text-ink-300">我</div>
             <div className="text-[11px] text-ink-50 truncate">主持人 · 决策困境提出者</div>
@@ -69,6 +72,7 @@ export default function MemberPanel({ perspectives, agentStates, judgeState }: M
                     hover:bg-paper-200/60 transition-colors"
                 >
                   <HandDrawnAvatar
+                    src={AVATAR_MAP[p.id] || undefined}
                     content={p.name.charAt(0)}
                     size="sm"
                     color={AVATAR_COLORS[i % AVATAR_COLORS.length]}
@@ -94,7 +98,7 @@ export default function MemberPanel({ perspectives, agentStates, judgeState }: M
         <div>
           <div className="text-[11px] text-ink-50 mb-2 px-1 font-hand tracking-wider">裁判</div>
           <div className="flex items-center gap-3 p-2 bg-sticky-white/60 rounded-hd-sm border-2 border-divider hd-filter tilt-right">
-            <HandDrawnAvatar content="⚖️" size="sm" color="purple" />
+            <HandDrawnAvatar src="/avatars/judge.png" content="⚖️" size="sm" color="purple" />
             <div className="flex-1 min-w-0">
               <div className="text-sm font-medium text-ink-300">裁判 Agent</div>
               <div className="text-[10px] text-ink-50">中立客观 · 综合判断</div>

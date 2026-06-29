@@ -1,6 +1,8 @@
 interface HandDrawnAvatarProps {
-  /** 头像显示的 emoji 或文字 */
-  content: string
+  /** 头像显示的 emoji 或文字（src 为空时使用） */
+  content?: string
+  /** 图片头像 URL（优先于 content） */
+  src?: string
   /** 渐变色方案 */
   color?: 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'gold' | 'pink' | 'cyan'
   size?: 'sm' | 'md' | 'lg' | 'xl'
@@ -37,6 +39,7 @@ const sizes = {
  */
 export default function HandDrawnAvatar({
   content,
+  src,
   color = 'blue',
   size = 'md',
   crown = false,
@@ -55,13 +58,18 @@ export default function HandDrawnAvatar({
         className={`
           ${sizes[size]}
           rounded-full
-          bg-gradient-to-br ${gradients[color]}
+          ${src ? 'bg-paper-100' : `bg-gradient-to-br ${gradients[color]}`}
           border-2 border-ink-300 hd-filter
           flex items-center justify-center
           shadow-md
+          overflow-hidden
         `}
       >
-        <span className="drop-shadow-sm">{content}</span>
+        {src ? (
+          <img src={src} alt="" className="w-full h-full object-cover rounded-full" />
+        ) : (
+          <span className="drop-shadow-sm">{content}</span>
+        )}
       </div>
 
       {/* 皇冠 */}

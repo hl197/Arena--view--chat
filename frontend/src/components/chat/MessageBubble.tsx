@@ -3,6 +3,7 @@ import { useState, useCallback } from 'react'
 import type { ChatMessage } from '../../api/types'
 import HandDrawnAvatar from '../ui/HandDrawnAvatar'
 import MessageContextMenu from './MessageContextMenu'
+import { useUserStore, getUserAvatar } from '../../store/userStore'
 
 /** 清理并渲染消息内容——去除 Markdown 语法，保留自然文本 */
 function renderContent(text: string): string {
@@ -68,6 +69,7 @@ export default function MessageBubble({ message, isConsecutive }: MessageBubbleP
   const isUser = message.type === 'user'
   const isSystem = message.type === 'system'
   const isJudge = message.senderId?.startsWith('judge')
+  const userGender = useUserStore((s) => s.gender)
 
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null)
 
@@ -118,7 +120,13 @@ export default function MessageBubble({ message, isConsecutive }: MessageBubbleP
           <div className="max-w-[65%] flex items-start gap-2 flex-row-reverse">
             {/* 头像 */}
             {!isConsecutive && (
-              <HandDrawnAvatar content="😊" color="gold" size="md" crown />
+              <HandDrawnAvatar
+                src={getUserAvatar(userGender)}
+                content="😊"
+                color={userGender === 'male' ? 'blue' : 'pink'}
+                size="md"
+                crown
+              />
             )}
             {isConsecutive && <div className="w-10 shrink-0" />}
 
@@ -170,7 +178,8 @@ export default function MessageBubble({ message, isConsecutive }: MessageBubbleP
           {/* 头像 */}
           {!isConsecutive && (
             <HandDrawnAvatar
-              content={message.avatar || emoji}
+              src={isJudge ? '/avatars/judge.png' : (message.avatar || undefined)}
+              content={emoji}
               color={isJudge ? 'gold' : color}
               size="md"
             />

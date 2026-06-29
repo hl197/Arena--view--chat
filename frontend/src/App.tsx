@@ -3,6 +3,7 @@ import Header from './components/layout/Header'
 import HomePage from './pages/HomePage'
 import DebatePage from './pages/DebatePage'
 import SettingsPage from './pages/SettingsPage'
+import MePage from './pages/MePage'
 
 /**
  * 标准页面布局（手绘手账风 + Header）
@@ -36,6 +37,7 @@ export default function App() {
     <StandardLayout>
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/me" element={<MePage />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Routes>
     </StandardLayout>
