@@ -9,6 +9,7 @@ from ..schemas import (
     DebateStatusResponse, DebateResultResponse,
     ErrorResponse, UserMessageRequest,
 )
+from .user import get_current_user
 from ...core.harness_engine import HarnessEngine, ArenaSession
 from ...core.config import ArenaConfig
 from ...core.streaming import StreamEvent, StreamEventType, SSEManager
@@ -39,6 +40,19 @@ def init_debate_routes(_engine: HarnessEngine, _memory: DebateMemory, _sse: SSEM
 async def start_debate(req: DebateStartRequest, request: Request):
     """发起辩论——返回 session_id 和 SSE 流地址"""
     session_id = f"s_{uuid.uuid4().hex[:12]}"
+
+    # 额度检查与扣减——已登录用户
+    user = await get_current_user(request)
+    if user:
+        user_id = user["id"]
+        quota = db.get_quota(user_id)
+        if quota:
+            allowed = db.increment_quota(user_id, tokens_used=0)
+            if not allowed:
+                raise HTTPException(
+                    status_code=429,
+                    detail=f"今日辩论次数已用完（{quota['daily_debates_limit']}/{quota['daily_debates_limit']}）。请明天再来，或升级您的套餐。"
+                )
 
     # 创建 SSE 队列
     queue = asyncio.Queue()

@@ -55,6 +55,7 @@ class UserResponse(BaseModel):
     email: str
     tier: str  # guest | registered | pro
     api_key_configured: bool = False
+    token: Optional[str] = None
 
 
 class QuotaResponse(BaseModel):

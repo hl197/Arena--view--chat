@@ -1,13 +1,15 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import HandDrawnCard from '../components/ui/HandDrawnCard'
 import HandDrawnAvatar from '../components/ui/HandDrawnAvatar'
 import HandDrawnButton from '../components/ui/HandDrawnButton'
 import HandDrawnDivider from '../components/ui/HandDrawnDivider'
 import { useUserStore, getUserAvatar, type UserGender } from '../store/userStore'
+import { useAuthStore } from '../store/authStore'
 
 export default function MePage() {
   const navigate = useNavigate()
   const { gender, nickname, setGender, setNickname } = useUserStore()
+  const { isLoggedIn, user, logout } = useAuthStore()
 
   return (
     <div className="min-h-screen paper-bg">
@@ -106,6 +108,48 @@ export default function MePage() {
             />
             <span className="text-xs text-ink-50 self-center">{nickname.length}/12</span>
           </div>
+        </HandDrawnCard>
+
+        {/* 账号信息 */}
+        <HandDrawnCard variant="white" className="p-6 mb-6">
+          <h3 className="text-sm font-bold text-ink-200 mb-4 flex items-center gap-2">
+            <span>🔐</span> 账号
+          </h3>
+          {isLoggedIn ? (
+            <div className="space-y-2 text-sm text-ink-200">
+              <div className="flex justify-between">
+                <span className="text-ink-50">邮箱</span>
+                <span>{user?.email}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-ink-50">用户 ID</span>
+                <span className="text-xs text-ink-50 font-mono">{user?.user_id}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-ink-50">套餐</span>
+                <span className="px-2 py-0.5 rounded-full bg-marker-blue/10 text-marker-blue text-xs font-medium">
+                  {user?.tier === 'premium' ? '高级版' : user?.tier === 'free' ? '免费版' : user?.tier ?? '未知'}
+                </span>
+              </div>
+              <HandDrawnDivider variant="dashed" className="my-3" />
+              <button
+                onClick={logout}
+                className="text-marker-red text-xs hover:underline"
+              >
+                退出登录
+              </button>
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-sm text-ink-50 mb-3">登录后查看账号信息</p>
+              <Link
+                to="/auth"
+                className="inline-block px-4 py-2 rounded-hd-md border-2 border-marker-blue/30 text-marker-blue text-sm hover:bg-marker-blue/5 transition-all hd-filter"
+              >
+                去登录
+              </Link>
+            </div>
+          )}
         </HandDrawnCard>
 
         {/* 关于 */}

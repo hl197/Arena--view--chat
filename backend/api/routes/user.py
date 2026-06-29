@@ -48,10 +48,13 @@ async def register(req: UserRegisterRequest):
     # 初始化额度
     db.init_quota(user_id, tier="registered", daily_limit=5, token_limit=300000)
 
+    token = auth_service.create_token(user_id)
+
     return UserResponse(
         user_id=user_id,
         email=req.email,
         tier="registered",
+        token=token,
     )
 
 
@@ -70,6 +73,7 @@ async def login(req: UserLoginRequest):
         email=user["email"],
         tier=user.get("tier", "registered"),
         api_key_configured=llm_config is not None,
+        token=token,
     )
 
 

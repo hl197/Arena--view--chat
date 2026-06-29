@@ -1,9 +1,17 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useUserStore, getUserAvatar } from '../../store/userStore'
+import { useAuthStore } from '../../store/authStore'
 import HandDrawnAvatar from '../ui/HandDrawnAvatar'
 
 export default function Header() {
+  const navigate = useNavigate()
   const gender = useUserStore((s) => s.gender)
+  const { isLoggedIn, user, logout } = useAuthStore()
+
+  const handleLogout = () => {
+    logout()
+    navigate('/')
+  }
 
   return (
     <header className="border-b-2 border-divider bg-paper-100/80 backdrop-blur hd-filter">
@@ -32,6 +40,28 @@ export default function Header() {
             />
             <span>我的</span>
           </Link>
+
+          {/* 认证状态 */}
+          {isLoggedIn ? (
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-ink-100 max-w-[120px] truncate" title={user?.email}>
+                {user?.email ?? ''}
+              </span>
+              <button
+                onClick={handleLogout}
+                className="px-3 py-1.5 rounded-hd-md border-2 border-marker-red/30 text-marker-red hover:bg-marker-red/5 transition-all hd-filter text-xs"
+              >
+                退出
+              </button>
+            </div>
+          ) : (
+            <Link
+              to="/auth"
+              className="px-3 py-1.5 rounded-hd-md border-2 border-marker-blue/30 text-marker-blue hover:bg-marker-blue/5 transition-all hd-filter"
+            >
+              登录
+            </Link>
+          )}
         </nav>
       </div>
     </header>

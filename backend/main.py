@@ -128,6 +128,12 @@ app = FastAPI(
 # CORS
 setup_cors(app, origins=config.cors_origins)
 
+# 健康检查端点（始终可用，不受路由注册影响）
+@app.get("/api/health")
+async def api_health_check():
+    return {"status": "ok", "version": __version__}
+
+
 # 初始化路由（注入全局服务）
 debate.init_debate_routes(engine, memory, sse_manager, db)
 history.init_history_routes(memory, db)
