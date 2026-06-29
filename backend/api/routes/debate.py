@@ -41,18 +41,21 @@ async def start_debate(req: DebateStartRequest, request: Request):
     """发起辩论——返回 session_id 和 SSE 流地址"""
     session_id = f"s_{uuid.uuid4().hex[:12]}"
 
-    # 额度检查与扣减——已登录用户
+    # 额度检查与扣减——已登录用户（用自己的 API Key 则无上限）
     user = await get_current_user(request)
     if user:
         user_id = user["id"]
-        quota = db.get_quota(user_id)
-        if quota:
-            allowed = db.increment_quota(user_id, tokens_used=0)
-            if not allowed:
-                raise HTTPException(
-                    status_code=429,
-                    detail=f"今日辩论次数已用完（{quota['daily_debates_limit']}/{quota['daily_debates_limit']}）。请明天再来，或升级您的套餐。"
-                )
+        # 用户配置了自己的 API Key → 走自己的 LLM 额度，不限制
+        llm_config = db.get_llm_config(user_id)
+        if not llm_config:
+            quota = db.get_quota(user_id)
+            if quota:
+                allowed = db.increment_quota(user_id, tokens_used=0)
+                if not allowed:
+                    raise HTTPException(
+                        status_code=429,
+                        detail=f"今日辩论次数已用完（{quota['daily_debates_limit']}/{quota['daily_debates_limit']}）。请明天再来，或配置自己的 API Key 解除限制。"
+                    )
 
     # 创建 SSE 队列
     queue = asyncio.Queue()

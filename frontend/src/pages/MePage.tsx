@@ -30,8 +30,21 @@ function fmtTokens(n: number): string {
   return String(n)
 }
 
-/** 进度条：已用量 / 限额 */
-function QuotaBar({ used, limit, label, suffix }: { used: number; limit: number; label: string; suffix?: string }) {
+/** 进度条：已用量 / 限额，无限额时显示 "无上限" */
+function QuotaBar({ used, limit, label, suffix, unlimited }: { used: number; limit: number; label: string; suffix?: string; unlimited?: boolean }) {
+  if (unlimited) {
+    return (
+      <div className="space-y-1">
+        <div className="flex justify-between text-xs">
+          <span className="text-ink-50">{label}</span>
+          <span className="text-marker-gold font-medium">∞ 无上限</span>
+        </div>
+        <div className="h-2 bg-paper-200 rounded-full overflow-hidden border border-divider/50">
+          <div className="h-full rounded-full bg-marker-gold/30" style={{ width: '100%' }} />
+        </div>
+      </div>
+    )
+  }
   const pct = Math.min((used / limit) * 100, 100)
   const warn = pct > 80
   return (
@@ -194,32 +207,40 @@ export default function MePage() {
               {quota && (
                 <>
                   <HandDrawnDivider variant="dashed" />
+                  {/* 用自己的 Key → 无上限提示 */}
+                  {quota.api_key_configured && (
+                    <div className="bg-marker-gold/8 border border-marker-gold/30 rounded-hd-sm p-3 text-xs text-ink-100 flex items-center gap-2">
+                      <span>🔑</span>
+                      <span>你正在使用自己的 API Key，不受平台额度限制</span>
+                    </div>
+                  )}
                   <div className="space-y-3">
                     <QuotaBar
                       used={quota.daily_debates_used}
                       limit={quota.daily_debates_limit}
                       label="今日辩论次数"
+                      unlimited={quota.api_key_configured}
                     />
                     <QuotaBar
                       used={quota.total_tokens_used}
                       limit={quota.total_tokens_limit}
                       label="Token 用量"
-                      suffix=""
+                      unlimited={quota.api_key_configured}
                     />
                   </div>
                   <HandDrawnDivider variant="dashed" />
                   <div className="flex gap-3 text-xs text-ink-100">
                     <div className="flex-1 bg-paper-100 rounded-hd-sm p-2.5 text-center border border-divider/50">
                       <div className="text-ink-50 mb-0.5">最大视角</div>
-                      <div className="font-bold text-ink-300">{tierCfg.perspectives} 个</div>
+                      <div className="font-bold text-ink-300">{quota.api_key_configured ? '∞' : `${tierCfg.perspectives} 个`}</div>
                     </div>
                     <div className="flex-1 bg-paper-100 rounded-hd-sm p-2.5 text-center border border-divider/50">
                       <div className="text-ink-50 mb-0.5">辩论轮次</div>
-                      <div className="font-bold text-ink-300">{tierCfg.rounds} 轮</div>
+                      <div className="font-bold text-ink-300">{quota.api_key_configured ? '∞' : `${tierCfg.rounds} 轮`}</div>
                     </div>
                     <div className="flex-1 bg-paper-100 rounded-hd-sm p-2.5 text-center border border-divider/50">
                       <div className="text-ink-50 mb-0.5">Token 上限</div>
-                      <div className="font-bold text-ink-300">{fmtTokens(quota.total_tokens_limit)}</div>
+                      <div className="font-bold text-ink-300">{quota.api_key_configured ? '∞' : fmtTokens(quota.total_tokens_limit)}</div>
                     </div>
                   </div>
                 </>
