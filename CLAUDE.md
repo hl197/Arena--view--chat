@@ -18,7 +18,7 @@ ArenaView — 多视角决策分析平台。用户提出决策困境（买房、
   → 决策地图输出 (共识点+分歧点+权衡维度+未知因素+风险矩阵)
 ```
 
-**架构：** 每个 Agent 独立 LLM 调用，按固定顺序在 `for` 循环中依次发言（非 `asyncio.gather` 并行），每轮发言前能看到完整对话历史。前端消息按 `speech_chunk` 事件累积，`is_final=true` 时一次性展示带 avatar 的完整发言。
+**架构：** 每个 Agent 独立 LLM 调用。Round 1（开场陈述）5 个 Agent 并行搜读（`asyncio.gather`），完成后按固定顺序依次发言；Round 2+ 串行（`for` 循环），每轮发言前能看到完整对话历史。前端消息按队列延迟显示（2.5s 间隔），模拟真人群聊节奏。
 
 **四层架构：** 基础设施(adapters/tools/context) → Agent基类 → Agent实现(ReAct/Judge) → Harness引擎(core/)
 
@@ -27,9 +27,12 @@ ArenaView — 多视角决策分析平台。用户提出决策困境（买房、
 ## Commands
 
 ```bash
-# 后端开发
+# 一键启动（推荐）
+bash start.sh          # Git Bash，同时启动后端 :8000 + 前端 :5173
+
+# 分开开发
 cd backend && pip install -e ".[dev]"          # 安装依赖
-uvicorn backend.main:app --reload --port 8000  # 启动 API (需要先设置 DEEPSEEK_API_KEY)
+python -m uvicorn backend.main:app --reload --port 8000  # 启动 API
 
 # 前端开发
 cd frontend && npm install && npm run dev      # 启动 Vite dev server (localhost:5173)
@@ -63,7 +66,7 @@ DATABASE_URL=sqlite:///arena.db    # 可选，默认 SQLite
 |------|------|------|
 | **LLM适配器** | `adapters/unified_llm.py` | ArenaLLM多模型路由，用户LLM优先→降级默认Gemini |
 | **视角生成器** | `core/perspective_generator.py` | 信息不对称注入——6种原型+LLM定制，生成有差异的视角 |
-| **辩论调度器** | `core/debate_scheduler.py` | 保留（向后兼容），当前使用顺序轮次群聊 |
+| **辩论调度器** | `core/debate_scheduler.py` | 旧架构残留（DebateTurn已废弃），当前使用 conversation_history 格式 |
 | **Harness引擎** | `core/harness_engine.py` | 完整4阶段编排：视角→研究→辩论→合成 |
 | **ReActAgent** | `agents/react_agent.py` | 视角研究执行者，FC驱动多步搜索+论证构建 |
 | **JudgeAgent** | `agents/judge_agent.py` | Reflection模式：初始合成→自审→改进，输出决策地图 |
@@ -81,20 +84,14 @@ DATABASE_URL=sqlite:///arena.db    # 可选，默认 SQLite
 - **命名约定**: 后端模块用下划线 (`harness_engine.py`)，前端组件 PascalCase (`DebatePage.tsx`)。
 - **状态管理**: 前端 Zustand store (`debateStore.ts`)，按 SSE 事件类型分派到 store actions。
 
-## Current State (2026-06-28)
+## Current State (2026-06-29)
 
-- ✅ 第1-2周完成：后端48文件~3700行 + 前端16源文件~1200行
-- ✅ 搜索工具：Bing (httpx) + WebFetch (httpx HTML 提取，替代了 Playwright 方案)
-- ✅ Agent 系统提示优化：人类式遮掩（搜不到时不暴露"搜索失败"，用"据我所知"自然过渡）
-- ⏳ 第3周待做：JWT认证、API Key加密存储、SQLite持久化、额度持久化、热门问题缓存
-- ⏳ 第4周待做：Docker部署、UI打磨(加载/空态/错误态)、首页Demo预计算、Swagger
-
-## 技能触发规则
-
-开发时根据任务自动调用 `.claude/skills/` 下的 6 个技能：
-- **agent-builder**: Agent范式选择、Prompt设计、Agent类实现
-- **agent-tools**: 工具接口设计、ToolRegistry、MCP集成、工具安全
-- **agent-memory**: 记忆系统、RAG管道、上下文工程
-- **multi-agent**: 多Agent协作模式(Pipeline/Parallel/Debate/Hierarchical)
-- **agent-training**: RL训练、评估体系
-- **hello-agents-reference**: 生产级参考实现(16项能力完整模式)
+- ✅ Round 1 并行化：5 Agent 同时搜读（`asyncio.gather`），完成后按序发言，耗时从 300s→60s
+- ✅ 对话历史持久化：`conversation_history` 存入 SQLite，旧格式 `debate_turns` 已废弃
+- ✅ 历史回放：前端 SSE 404 时自动降级到 REST API 加载已完成辩论，重启后不丢数据
+- ✅ `/debate` 路由：不带 sessionId 进入讨论界面，浏览历史侧边栏无需新建对话
+- ✅ 手绘手账风 UI 体系：HandDrawn 系列组件 + 侧边栏 + 成员/决策地图面板
+- ✅ 启动脚本：`start.sh` (Git Bash) / `start.ps1` (PowerShell) 一键启动前后端
+- ✅ 消息延迟队列：前端 2.5s 间隔排队显示，模拟真人群聊
+- ✅ 超时调优：search 5→15s, agent 60→90s, debate 120→300s
+- ⏳ 待做：JWT认证、API Key加密存储、额度持久化与限制、Docker部署

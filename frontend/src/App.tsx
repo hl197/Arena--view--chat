@@ -19,13 +19,14 @@ function StandardLayout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   const location = useLocation()
-  const isChatPage = location.pathname.startsWith('/debate/')
+  const isChatPage = location.pathname.startsWith('/debate')
 
-  // 群聊页面——两栏式独立布局
+  // 群聊页面——两栏式独立布局（带或不带 sessionId）
   if (isChatPage) {
     return (
       <Routes>
         <Route path="/debate/:sessionId" element={<DebatePage />} />
+        <Route path="/debate" element={<DebatePage />} />
       </Routes>
     )
   }

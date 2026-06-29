@@ -54,3 +54,11 @@ export interface ChatMessage {
   timestamp: number      // unix ms
   type: 'agent' | 'user' | 'system' | 'judge'
 }
+
+/** 对话历史条目（新格式：顺序轮次群聊） */
+export interface ConversationEntry {
+  round: number
+  speaker: string
+  speaker_id: string
+  text: string
+}

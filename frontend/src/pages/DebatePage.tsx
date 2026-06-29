@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useDebateStore, nextMsgId, AVATAR_MAP } from '../store/debateStore'
 import { useUIStore } from '../store/uiStore'
 import { useSSE } from '../hooks/useSSE'
-import { post } from '../api/client'
+import { get, post } from '../api/client'
 import HistorySidebar from '../components/sidebar/HistorySidebar'
 import ChatHeader from '../components/chat/ChatHeader'
 import AgentStatusBar from '../components/chat/AgentStatusBar'
@@ -124,6 +124,77 @@ export default function DebatePage() {
   }, [isDragging, sidebarWidth])
 
   // SSE → ChatMessage + AgentState
+  // 历史回放：是否已从 API 加载过
+  const historyLoadedRef = useRef(false)
+
+  /** 从 REST API 加载已结束的辩论结果 */
+  const loadHistoryResult = useCallback(async (sid: string) => {
+    if (historyLoadedRef.current) return
+    historyLoadedRef.current = true
+
+    try {
+      const result = await get<{
+        session_id: string
+        question: string
+        status: string
+        perspectives: Array<{ id: string; name: string; stance: string }>
+        arguments: Record<string, string>
+        debate_transcript: Array<{
+          round: number
+          speaker: string
+          speaker_id: string
+          text: string
+        }>
+        decision_map: string
+        total_tokens: number
+        total_time_ms: number
+      }>(`/debate/${sid}/result`)
+
+      // 填充 store
+      store.setSessionId(result.session_id)
+      store.setQuestion(result.question)
+      store.setStatus('completed')
+      store.setPhase('synthesis')
+
+      // 填充视角
+      for (const p of result.perspectives) {
+        store.addPerspective(p)
+      }
+
+      // 将对话记录转成 ChatMessage
+      const baseTime = Date.now() - 86400000 // 历史消息用昨天的时间戳
+      let msgIndex = 0
+      for (const entry of result.debate_transcript) {
+        store.addMessage({
+          id: `hist_${msgIndex++}`,
+          senderId: entry.speaker_id,
+          senderName: entry.speaker,
+          content: entry.text,
+          timestamp: baseTime + msgIndex * 60000,
+          type: entry.speaker_id === 'judge' ? 'judge' : 'agent',
+        })
+      }
+
+      // 决策地图
+      if (result.decision_map) {
+        store.setDecisionMap(result.decision_map)
+        store.addMessage({
+          id: `hist_judge`,
+          senderId: 'judge',
+          senderName: '裁判',
+          content: result.decision_map,
+          timestamp: baseTime + (result.debate_transcript.length + 1) * 60000,
+          type: 'judge',
+        })
+        openRightPanel('decision-map')
+      }
+
+      store.setStats(result.total_tokens, result.total_time_ms)
+    } catch {
+      store.setError('加载历史记录失败')
+    }
+  }, [store])
+
   const handleSSEEvent = useCallback((event: SSEEvent) => {
     const now = Date.now()
     const mkSys = (content: string): ChatMessage => ({
@@ -425,6 +496,11 @@ export default function DebatePage() {
     handleSSEEvent,
     () => {},
     (err) => {
+      // 404 → 可能是历史会话，尝试从 REST API 加载
+      if (err.includes('404') && sessionId) {
+        loadHistoryResult(sessionId)
+        return
+      }
       store.setError(err)
       store.addMessage({
         id: nextMsgId(), senderId: 'system', senderName: '',
@@ -511,10 +587,17 @@ export default function DebatePage() {
           >
             <div className="max-w-3xl mx-auto py-4">
               {store.messages.length === 0 && store.status === 'idle' && (
-                <div className="flex justify-center mt-8">
-                  <span className="text-xs text-ink-50 bg-paper-200/60 border border-dashed border-divider rounded-full px-4 py-1.5 hd-filter">
-                    等待讨论开始...
-                  </span>
+                <div className="flex flex-col items-center justify-center mt-20 gap-4">
+                  <span className="text-5xl">💬</span>
+                  <p className="text-ink-50 text-sm">选择一个历史讨论，或发起新的决策分析</p>
+                  <HandDrawnButton
+                    variant="primary"
+                    size="md"
+                    tilt="right"
+                    onClick={() => navigate('/')}
+                  >
+                    ✏️ 新建讨论
+                  </HandDrawnButton>
                 </div>
               )}
 
@@ -569,9 +652,10 @@ export default function DebatePage() {
 
         <ChatInput
           onSend={handleUserSend}
-          disabled={store.status === 'completed' || store.status === 'error'}
+          disabled={!sessionId || store.status === 'completed' || store.status === 'error'}
           placeholder={
-            store.status === 'completed' ? '讨论已结束'
+            !sessionId ? '请选择或新建一个讨论'
+            : store.status === 'completed' ? '讨论已结束'
             : store.status === 'error' ? '讨论出错'
             : '说说你的想法...'
           }

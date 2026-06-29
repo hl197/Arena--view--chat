@@ -61,13 +61,21 @@ async def list_history(page: int = 1, page_size: int = 10):
     )
 
 
-@router.get("/history/{session_id}")
-async def get_history_detail(session_id: str):
-    """获取历史辩论详情"""
-    record = memory.get(session_id)
-    if not record:
-        raise HTTPException(status_code=404, detail="会话不存在")
-
+def _format_debate_detail(record) -> dict:
+    """统一格式化辩论详情——兼容内存 SessionRecord 和 DB dict"""
+    if isinstance(record, dict):
+        return {
+            "session_id": record.get("id", ""),
+            "question": record.get("question", ""),
+            "perspectives": record.get("perspectives", []),
+            "arguments": record.get("arguments", {}),
+            "debate_transcript": record.get("debate_transcript", []),
+            "decision_map": record.get("decision_map", ""),
+            "total_tokens": record.get("total_tokens", 0),
+            "total_time_ms": record.get("total_time_ms", 0),
+            "status": record.get("status", "completed"),
+        }
+    # SessionRecord dataclass
     return {
         "session_id": record.session_id,
         "question": record.question,
@@ -81,16 +89,35 @@ async def get_history_detail(session_id: str):
     }
 
 
+@router.get("/history/{session_id}")
+async def get_history_detail(session_id: str):
+    """获取历史辩论详情——内存优先，DB 降级"""
+    record = memory.get(session_id)
+    if record:
+        return _format_debate_detail(record)
+
+    # DB 降级
+    if db:
+        db_record = db.get_debate(session_id)
+        if db_record:
+            return _format_debate_detail(db_record)
+
+    raise HTTPException(status_code=404, detail="会话不存在")
+
+
 @router.delete("/history/{session_id}")
 async def delete_history(session_id: str):
     """删除历史辩论——同时删除内存和 DB 中的记录"""
+    import sys
     # 删除内存中的记录
     memory.delete(session_id)
-    # 删除 DB 中的记录（如果 DB 可用）
+    # 删除 DB 中的记录
     if db:
         try:
             db.delete_debate(session_id)
-        except Exception:
-            # DB 删除失败不影响结果，内存已删
-            pass
+            print(f"   🗑️  已从数据库删除: {session_id}", file=sys.stderr, flush=True)
+        except Exception as e:
+            print(f"   ⚠️  数据库删除失败: {session_id} — {e}", file=sys.stderr, flush=True)
+    else:
+        print(f"   ⚠️  数据库未初始化，无法删除: {session_id}", file=sys.stderr, flush=True)
     return {"status": "deleted", "session_id": session_id}

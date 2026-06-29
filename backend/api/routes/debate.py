@@ -72,15 +72,13 @@ async def start_debate(req: DebateStartRequest, request: Request):
                 arguments=session.arguments,
                 debate_transcript=[
                     {
-                        "round": t.round,
-                        "challenger_name": t.challenger_name,
-                        "defender_name": t.defender_name,
-                        "challenge": t.challenge,
-                        "defense": t.defense,
-                        "judge_note": t.judge_note,
+                        "round": h.get("round", 0),
+                        "speaker": h.get("speaker", ""),
+                        "speaker_id": h.get("speaker_id", ""),
+                        "text": h.get("text", ""),
                     }
-                    for t in session.debate_turns
-                ],
+                    for h in session.conversation_history
+                ] if session.conversation_history else [],
                 decision_map=session.decision_map,
                 total_tokens=session.total_tokens,
                 total_time_ms=session.total_time_ms,
@@ -101,15 +99,13 @@ async def start_debate(req: DebateStartRequest, request: Request):
                     "arguments": session.arguments,
                     "debate_transcript": [
                         {
-                            "round": t.round,
-                            "challenger_name": t.challenger_name,
-                            "defender_name": t.defender_name,
-                            "challenge": t.challenge,
-                            "defense": t.defense,
-                            "judge_note": t.judge_note,
+                            "round": h.get("round", 0),
+                            "speaker": h.get("speaker", ""),
+                            "speaker_id": h.get("speaker_id", ""),
+                            "text": h.get("text", ""),
                         }
-                        for t in session.debate_turns
-                    ],
+                        for h in session.conversation_history
+                    ] if session.conversation_history else [],
                     "decision_map": session.decision_map,
                     "total_tokens": session.total_tokens,
                     "total_time_ms": session.total_time_ms,
@@ -171,7 +167,7 @@ async def stream_debate(session_id: str):
 
 @router.get("/{session_id}/status", response_model=DebateStatusResponse)
 async def get_debate_status(session_id: str):
-    """查询辩论状态"""
+    """查询辩论状态——活跃会话优先，历史记录 DB 降级"""
     if session_id in active_sessions:
         session = active_sessions[session_id]
         return DebateStatusResponse(
@@ -188,27 +184,53 @@ async def get_debate_status(session_id: str):
             progress=1.0,
         )
 
+    # DB 降级
+    if db:
+        db_record = db.get_debate(session_id)
+        if db_record:
+            return DebateStatusResponse(
+                session_id=session_id,
+                status=db_record.get("status", "completed"),
+                progress=1.0,
+            )
+
     raise HTTPException(status_code=404, detail="会话不存在")
 
 
 @router.get("/{session_id}/result", response_model=DebateResultResponse)
 async def get_debate_result(session_id: str):
-    """获取辩论结果"""
+    """获取辩论结果——内存优先，DB 降级"""
     record = memory.get(session_id)
-    if not record:
-        raise HTTPException(status_code=404, detail="会话不存在")
+    if record:
+        return DebateResultResponse(
+            session_id=record.session_id,
+            question=record.question,
+            status=record.status,
+            perspectives=record.perspectives,
+            arguments=record.arguments,
+            debate_transcript=record.debate_transcript,
+            decision_map=record.decision_map,
+            total_tokens=record.total_tokens,
+            total_time_ms=record.total_time_ms,
+        )
 
-    return DebateResultResponse(
-        session_id=record.session_id,
-        question=record.question,
-        status=record.status,
-        perspectives=record.perspectives,
-        arguments=record.arguments,
-        debate_transcript=record.debate_transcript,
-        decision_map=record.decision_map,
-        total_tokens=record.total_tokens,
-        total_time_ms=record.total_time_ms,
-    )
+    # DB 降级
+    if db:
+        db_record = db.get_debate(session_id)
+        if db_record:
+            return DebateResultResponse(
+                session_id=db_record.get("id", ""),
+                question=db_record.get("question", ""),
+                status=db_record.get("status", "completed"),
+                perspectives=db_record.get("perspectives", []),
+                arguments=db_record.get("arguments", {}),
+                debate_transcript=db_record.get("debate_transcript", []),
+                decision_map=db_record.get("decision_map", ""),
+                total_tokens=db_record.get("total_tokens", 0),
+                total_time_ms=db_record.get("total_time_ms", 0),
+            )
+
+    raise HTTPException(status_code=404, detail="会话不存在")
 
 
 @router.post("/{session_id}/message")

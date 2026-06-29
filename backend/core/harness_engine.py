@@ -42,6 +42,7 @@ class ArenaSession:
     perspectives: list[Perspective] = field(default_factory=list)
     arguments: dict[str, str] = field(default_factory=dict)   # perspective_id -> argument
     debate_turns: list[DebateTurn] = field(default_factory=list)
+    conversation_history: list[dict] = field(default_factory=list)  # [{round, speaker, speaker_id, text}, ...]
     decision_map: str = ""
     total_tokens: int = 0
     total_time_ms: int = 0
@@ -194,6 +195,7 @@ class HarnessEngine:
                 num_rounds=discussion_rounds,
                 emit=emit,
             )
+            session.conversation_history = conversation_history
 
             # 提取 arguments 用于兼容旧接口
             for p in perspectives:

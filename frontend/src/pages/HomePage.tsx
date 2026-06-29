@@ -68,6 +68,14 @@ export default function HomePage() {
             <br />
             帮你理解决策的全貌。
           </p>
+          <div className="mt-5">
+            <button
+              onClick={() => navigate('/debate')}
+              className="text-sm text-ink-50 hover:text-marker-blue transition-colors underline-hd border-b border-dashed border-divider pb-0.5"
+            >
+              📋 查看历史讨论
+            </button>
+          </div>
         </div>
 
         {/* 输入卡片 */}
