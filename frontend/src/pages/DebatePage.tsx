@@ -41,6 +41,23 @@ export default function DebatePage() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const [isDragging, setIsDragging] = useState(false)
+  const [loadingHistory, setLoadingHistory] = useState(false)  // 加载历史消息时的提示
+  const [blockedReminder, setBlockedReminder] = useState(false)  // 生成中点击被拦截的提醒
+
+  // 是否正在生成决策（禁止切换页面）
+  const isGenerating = store.status === 'generating' || store.status === 'researching' || store.status === 'debating' || store.status === 'synthesizing'
+
+  // 浏览器关闭/刷新拦截
+  useEffect(() => {
+    if (!isGenerating) return
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      e.returnValue = '决策正在生成中，离开页面将丢失进度'
+      return '决策正在生成中，离开页面将丢失进度'
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [isGenerating])
 
   // 消息延迟队列（ref 避免闭包问题）
   const queueRef = useRef<Array<() => void>>([])
@@ -58,9 +75,14 @@ export default function DebatePage() {
     }
     processingRef.current = true
     const fn = queueRef.current.shift()!
-    fn()
+    try {
+      fn()
+    } catch (e) {
+      console.error('消息队列处理失败:', e)
+      // 单条消息失败不影响后续消息
+    }
     if (queueRef.current.length > 0) {
-      timerRef.current = setTimeout(processNext, 2500)
+      timerRef.current = setTimeout(processNext, 2000)
     } else {
       processingRef.current = false
       timerRef.current = null
@@ -69,15 +91,16 @@ export default function DebatePage() {
 
   /** 发消息：所有消息排队依次显示 */
   const addMsg = useCallback((msg: ChatMessage) => {
+    const s = useDebateStore.getState()
     if (msg.type === 'user') {
-      store.addMessage(msg)
+      s.addMessage(msg)
       return
     }
-    queueRef.current.push(() => store.addMessage(msg))
+    queueRef.current.push(() => s.addMessage(msg))
     if (!processingRef.current) {
-      timerRef.current = setTimeout(processNext, 600)
+      timerRef.current = setTimeout(processNext, 200)  // 首条快速响应
     }
-  }, [store, processNext])
+  }, [processNext])
 
   const scrollToBottom = useCallback(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -100,14 +123,34 @@ export default function DebatePage() {
     if (prevSessionIdRef.current === sessionId) return
     prevSessionIdRef.current = sessionId
 
+    // 清理旧会话的队列和缓冲，防止旧数据污染新会话
+    queueRef.current = []
+    speechBufferRef.current.clear()
+    if (timerRef.current) {
+      clearTimeout(timerRef.current)
+      timerRef.current = null
+    }
+    processingRef.current = false
+
     // 重置历史加载标记，允许 loadHistoryResult 再次执行
     historyLoadedRef.current = false
+    setLoadingHistory(false)
     // 清空旧会话的数据
     store.reset()
     if (sessionId) {
       store.setSessionId(sessionId)
     }
-  }, [sessionId, store])
+  }, [sessionId])  // 只依赖 sessionId，不依赖整个 store 对象
+
+  // 回连已有会话：如果 store 为空（不是从 HomePage 新建的），先从 REST 加载当前状态
+  useEffect(() => {
+    if (!sessionId) return
+    // 用 getState() 读取即时状态，不把 store 状态放依赖数组避免循环触发
+    const state = useDebateStore.getState()
+    if (state.question && state.status !== 'idle') return
+    if (state.messages.length > 0) return
+    loadHistoryResult(sessionId)
+  }, [sessionId])  // loadHistoryResult 是稳定引用，不需要放依赖
 
   // 拖拽调整侧边栏宽度
   const dragStartXRef = useRef(0)
@@ -144,10 +187,12 @@ export default function DebatePage() {
   // 历史回放：是否已从 API 加载过
   const historyLoadedRef = useRef(false)
 
-  /** 从 REST API 加载已结束的辩论结果 */
+  /** 从 REST API 加载辩论结果——兼容进行中和已完成的辩论
+   *  使用 getState() 而非响应式 store，避免 callback 每次渲染都变化 */
   const loadHistoryResult = useCallback(async (sid: string) => {
     if (historyLoadedRef.current) return
     historyLoadedRef.current = true
+    setLoadingHistory(true)
 
     try {
       const result = await get<{
@@ -167,23 +212,33 @@ export default function DebatePage() {
         total_time_ms: number
       }>(`/debate/${sid}/result`)
 
-      // 填充 store
-      store.setSessionId(result.session_id)
-      store.setQuestion(result.question)
-      store.setStatus('completed')
-      store.setPhase('synthesis')
+      const s = useDebateStore.getState()
+      const ui = useUIStore.getState()
+      s.setSessionId(result.session_id)
+      s.setQuestion(result.question)
+
+      // 根据实际状态设置（进行中 / 已完成）
+      // 关键：perspectives 为空 + running = 新辩论刚启动，不要设状态，
+      // 让 SSE 的 phase 事件来控制，避免竞争导致"卡在入场动画"
+      const isRunning = result.status === 'running'
+      const isEmpty = result.perspectives.length === 0
+      if (!isEmpty) {
+        s.setStatus(isRunning ? 'debating' : 'completed')
+        s.setPhase(isRunning ? 'discussion' : 'synthesis')
+      }
 
       // 填充视角
       for (const p of result.perspectives) {
-        store.addPerspective(p)
+        s.addPerspective(p)
+        s.setAgentStatus(p.name, isRunning ? 'idle' : 'done')
       }
 
-      // 将对话记录转成 ChatMessage
-      const baseTime = Date.now() - 86400000 // 历史消息用昨天的时间戳
+      // 将对话记录转成 ChatMessage（历史消息直接 addMessage，不走队列）
+      const baseTime = Date.now()
       let msgIndex = 0
       for (const entry of result.debate_transcript) {
         const isJudge = entry.speaker_id === 'judge'
-        store.addMessage({
+        s.addMessage({
           id: `hist_${msgIndex++}`,
           senderId: entry.speaker_id,
           senderName: entry.speaker,
@@ -194,10 +249,10 @@ export default function DebatePage() {
         })
       }
 
-      // 决策地图
-      if (result.decision_map) {
-        store.setDecisionMap(result.decision_map)
-        store.addMessage({
+      // 决策地图（仅在完成时展示）
+      if (result.decision_map && !isRunning) {
+        s.setDecisionMap(result.decision_map)
+        s.addMessage({
           id: `hist_judge`,
           senderId: 'judge',
           senderName: '裁判',
@@ -205,17 +260,20 @@ export default function DebatePage() {
           timestamp: baseTime + (result.debate_transcript.length + 1) * 60000,
           type: 'judge',
         })
-        openRightPanel('decision-map')
+        ui.openRightPanel('decision-map')
       }
 
-      store.setStats(result.total_tokens, result.total_time_ms)
+      s.setStats(result.total_tokens, result.total_time_ms)
     } catch {
-      store.setError('加载历史记录失败')
+      useDebateStore.getState().setError('加载历史记录失败')
+    } finally {
+      setLoadingHistory(false)
     }
-  }, [store])
+  }, [])  // 稳定引用，永不变化
 
   const handleSSEEvent = useCallback((event: SSEEvent) => {
     const now = Date.now()
+    const s = store
     const mkSys = (content: string): ChatMessage => ({
       id: nextMsgId(), senderId: 'system', senderName: '', content, timestamp: now, type: 'system',
     })
@@ -223,14 +281,14 @@ export default function DebatePage() {
     switch (event.type) {
       case 'phase': {
         const phase = event.phase as string
-        store.setPhase(phase)
-        store.setStatus(
+        s.setPhase(phase)
+        s.setStatus(
           phase === 'perspectives' ? 'generating'
           : phase === 'discussion' ? 'debating'
           : phase === 'research' ? 'researching'
           : phase === 'debate' ? 'debating'
           : phase === 'synthesis' ? 'synthesizing'
-          : store.status
+          : s.status
         )
         addMsg(mkSys(
           phase === 'perspectives' ? '📋 正在生成分析视角...'
@@ -240,15 +298,15 @@ export default function DebatePage() {
           : phase === 'synthesis' ? '🧠 裁判开始梳理所有观点，生成决策地图...'
           : phase
         ))
-        if (phase === 'synthesis') store.setJudgeState('thinking')
+        if (phase === 'synthesis') s.setJudgeState('thinking')
         break
       }
 
       case 'perspective_ready': {
         const pName = (event.name || event.perspective_name || '') as string
         const pId = (event.id || event.perspective_id || '') as string
-        store.addPerspective({ id: pId, name: pName, stance: (event.stance || '') as string })
-        store.setAgentStatus(pName, 'idle')
+        s.addPerspective({ id: pId, name: pName, stance: (event.stance || '') as string })
+        s.setAgentStatus(pName, 'idle')
         break
       }
 
@@ -263,29 +321,29 @@ export default function DebatePage() {
             content: text, timestamp: now, type: 'agent',
           })
         }
-        store.setAgentStatus(senderName, 'idle')
+        s.setAgentStatus(senderName, 'idle')
         break
       }
 
       case 'agent_status': {
         const agentName = (event.perspective_name || '') as string
         const rawStatus = (event.status || '') as string
-        store.setAgentStatus(agentName, rawStatus)
+        s.setAgentStatus(agentName, rawStatus)
         // composing 也显示"发言中"，让用户看到谁在说话
         if (['searching', 'researching', 'debating', 'composing'].includes(rawStatus)) {
-          const names = store.typingNames
+          const names = s.typingNames
           if (!names.includes(agentName)) {
-            store.setTypingNames([...names, agentName])
+            s.setTypingNames([...names, agentName])
           }
         } else {
-          store.setTypingNames(store.typingNames.filter(n => n !== agentName))
+          s.setTypingNames(s.typingNames.filter(n => n !== agentName))
         }
         break
       }
 
       case 'argument_chunk': {
         const senderName = (event.perspective_name || 'Agent') as string
-        const perspective = store.perspectives.find(p => p.name === senderName)
+        const perspective = s.perspectives.find(p => p.name === senderName)
         const senderId = perspective?.id || 'unknown'
         const text = (event.text || event.summary || '') as string
         if (text.trim()) {
@@ -300,15 +358,15 @@ export default function DebatePage() {
 
       case 'research_chunk': {
         const senderName = (event.perspective_name || 'Agent') as string
-        const perspective = store.perspectives.find(p => p.name === senderName)
+        const perspective = s.perspectives.find(p => p.name === senderName)
         const senderId = perspective?.id || 'unknown'
         const text = (event.text || '') as string
         const isFinal = event.is_final as boolean
 
         if (text.trim()) {
-          const lastMsg = store.messages[store.messages.length - 1]
+          const lastMsg = s.messages[s.messages.length - 1]
           if (isFinal === false && lastMsg && lastMsg.senderId === senderId && lastMsg.type === 'agent') {
-            store.appendToLastMessage(text)
+            s.appendToLastMessage(text)
           } else {
             addMsg({
               id: nextMsgId(), senderId, senderName,
@@ -319,16 +377,16 @@ export default function DebatePage() {
         }
 
         if (isFinal) {
-          store.setTypingNames(store.typingNames.filter(n => n !== senderName))
-          store.setAgentStatus(senderName, 'done')
+          s.setTypingNames(s.typingNames.filter(n => n !== senderName))
+          s.setAgentStatus(senderName, 'done')
         }
         break
       }
 
       case 'argument_complete': {
         const agentName = (event.perspective_name || '') as string
-        store.setTypingNames(store.typingNames.filter(n => n !== agentName))
-        store.setAgentStatus(agentName, 'done')
+        s.setTypingNames(s.typingNames.filter(n => n !== agentName))
+        s.setAgentStatus(agentName, 'done')
         addMsg(mkSys(`✅ ${agentName} 已完成论证`))
         break
       }
@@ -341,9 +399,15 @@ export default function DebatePage() {
       }
 
       case 'speech_chunk': {
-        const senderName = (event.perspective_name || 'Agent') as string
-        const perspective = store.perspectives.find(p => p.name === senderName)
-        const senderId = perspective?.id || (event.perspective_id as string) || 'unknown'
+        // 优先用 event.perspective_id（后端保证发送），避免 store 未就绪时退化为 'unknown'
+        const senderId = (event.perspective_id as string) || (() => {
+          const senderName = (event.perspective_name || 'Agent') as string
+          const p = s.perspectives.find(pp => pp.name === senderName)
+          return p?.id || 'unknown'
+        })()
+        const senderName = (event.perspective_name ||
+          s.perspectives.find(p => p.id === senderId)?.name ||
+          'Agent') as string
         const text = (event.text || '') as string
         const isFinal = event.is_final as boolean
 
@@ -360,21 +424,28 @@ export default function DebatePage() {
               avatar: AVATAR_MAP[senderId],
               content: fullText, timestamp: now, type: 'agent',
             })
-            // 只移除当前发言者，不清空全员（并行场景其他人可能还在搜）
-            store.setTypingNames(store.typingNames.filter(n => n !== senderName))
-            store.setAgentStatus(senderName, 'done')
+            s.setTypingNames(s.typingNames.filter(n => n !== senderName))
+            s.setAgentStatus(senderName, 'done')
           } else {
-            store.setAgentStatus(senderName, 'composing')
-            store.setTypingNames([senderName])
+            s.setAgentStatus(senderName, 'composing')
+            // 追加而非覆盖，保留并行场景下其他 agent 的状态
+            s.setTypingNames(
+              [...new Set([...s.typingNames.filter(n => n !== senderName), senderName])]
+            )
           }
         }
         break
       }
 
       case 'speech_end': {
-        const senderName = (event.perspective_name || '') as string
-        const perspective = store.perspectives.find(p => p.name === senderName)
-        const senderId = perspective?.id || (event.perspective_id as string) || 'unknown'
+        const senderId = (event.perspective_id as string) || (() => {
+          const sName = (event.perspective_name || 'Agent') as string
+          const p = s.perspectives.find(pp => pp.name === sName)
+          return p?.id || 'unknown'
+        })()
+        const senderName = (event.perspective_name ||
+          s.perspectives.find(p => p.id === senderId)?.name ||
+          'Agent') as string
 
         const buffer = speechBufferRef.current
         const remaining = buffer.get(senderId)
@@ -387,8 +458,8 @@ export default function DebatePage() {
           })
         }
 
-        store.setAgentStatus(senderName, 'done')
-        store.setTypingNames(store.typingNames.filter(n => n !== senderName))
+        s.setAgentStatus(senderName, 'done')
+        s.setTypingNames(s.typingNames.filter(n => n !== senderName))
         break
       }
 
@@ -401,16 +472,16 @@ export default function DebatePage() {
       case 'debate_turn_start': {
         const challenger = (event.challenger_name || '') as string
         const defender = (event.defender_name || '') as string
-        store.setAgentStatus(challenger, 'debating')
-        store.setAgentStatus(defender, 'debating')
-        store.setTypingNames([challenger])
+        s.setAgentStatus(challenger, 'debating')
+        s.setAgentStatus(defender, 'debating')
+        s.setTypingNames([challenger])
         addMsg(mkSys(`⚔️ 第${event.round || '?'}轮 · ${challenger} 质疑 ${defender}`))
         break
       }
 
       case 'debate_chunk': {
         const senderName = (event.perspective_name || '') as string
-        const perspective = store.perspectives.find(p => p.name === senderName)
+        const perspective = s.perspectives.find(p => p.name === senderName)
         const senderId = perspective?.id || 'unknown'
         const text = (event.text || '') as string
         if (text.trim()) {
@@ -426,29 +497,29 @@ export default function DebatePage() {
       case 'debate_turn_end': {
         const challenger = (event.challenger_name || '') as string
         const defender = (event.defender_name || '') as string
-        store.setAgentStatus(challenger, 'done')
-        store.setAgentStatus(defender, 'done')
-        store.setTypingNames([])
+        s.setAgentStatus(challenger, 'done')
+        s.setAgentStatus(defender, 'done')
+        s.setTypingNames([])
         if (event.judge_note) {
-          store.setJudgeState('composing')
+          s.setJudgeState('composing')
           addMsg({
             id: nextMsgId(), senderId: 'judge', senderName: '裁判',
             avatar: AVATAR_MAP['judge'],
             content: `📝 本轮小结：${event.judge_note}`,
             timestamp: now, type: 'judge',
           })
-          store.setJudgeState('done')
+          s.setJudgeState('done')
         }
         break
       }
 
       case 'synthesis_start':
-        store.setJudgeState('thinking')
+        s.setJudgeState('thinking')
         addMsg(mkSys('🧠 裁判开始综合分析大家的观点...'))
         break
 
       case 'self_reflection':
-        store.setJudgeState('composing')
+        s.setJudgeState('composing')
         {
           const iter = (event.iteration || 1) as number
           addMsg(mkSys(`🪞 裁判正在自我审查第 ${iter} 轮，检查偏见、遗漏和假共识...`))
@@ -456,7 +527,7 @@ export default function DebatePage() {
         break
 
       case 'decision_map_chunk':
-        store.setDecisionMap((store.decisionMap || '') + (event.text || ''))
+        s.setDecisionMap((s.decisionMap || '') + (event.text || ''))
         // 辩论结束时自动打开决策地图面板
         if (event.is_final) {
           openRightPanel('decision-map')
@@ -482,16 +553,16 @@ export default function DebatePage() {
         break
 
       case 'complete':
-        store.setStatus('completed')
-        store.setJudgeState('done')
-        if (event.total_time_ms) store.setStats(store.totalTokens, event.total_time_ms as number)
-        store.perspectives.forEach(p => store.setAgentStatus(p.name, 'done'))
-        store.setTypingNames([])
-        if (store.decisionMap) {
+        s.setStatus('completed')
+        s.setJudgeState('done')
+        if (event.total_time_ms) s.setStats(s.totalTokens, event.total_time_ms as number)
+        s.perspectives.forEach(p => s.setAgentStatus(p.name, 'done'))
+        s.setTypingNames([])
+        if (s.decisionMap) {
           addMsg({
             id: nextMsgId(), senderId: 'judge', senderName: '裁判',
             avatar: AVATAR_MAP['judge'],
-            content: `📊 决策地图\n\n${store.decisionMap}`,
+            content: `📊 决策地图\n\n${s.decisionMap}`,
             timestamp: now, type: 'judge',
           })
           // 完成后自动打开决策地图
@@ -503,11 +574,15 @@ export default function DebatePage() {
         break
 
       case 'error':
-        store.setError((event.message || event.data?.message || '未知错误') as string)
+        s.setError((event.message || event.data?.message || '未知错误') as string)
         addMsg(mkSys(`❌ 出错了：${event.message || '未知错误'}`))
         break
     }
   }, [store, addMsg, openRightPanel])
+
+  // 跟踪当前 sessionId，防止旧连接的 SSE 错误加载到新会话
+  const currentSessionRef = useRef(sessionId)
+  useEffect(() => { currentSessionRef.current = sessionId }, [sessionId])
 
   // SSE 连接
   const { abort } = useSSE(
@@ -515,6 +590,8 @@ export default function DebatePage() {
     handleSSEEvent,
     () => {},
     (err) => {
+      // 如果连接的 sessionId 已经不是当前页面，忽略（旧的 abort 触发的）
+      if (currentSessionRef.current !== sessionId && err.includes('abort')) return
       // 404 → 可能是历史会话，尝试从 REST API 加载
       if (err.includes('404') && sessionId) {
         loadHistoryResult(sessionId)
@@ -563,7 +640,15 @@ export default function DebatePage() {
       >
         <HistorySidebar
           activeSessionId={sessionId}
-          onSelect={(id) => navigate(`/debate/${id}`)}
+          generating={isGenerating}
+          onSelect={(id) => {
+            if (isGenerating && id !== sessionId) {
+              setBlockedReminder(true)
+              setTimeout(() => setBlockedReminder(false), 3000)
+              return
+            }
+            navigate(`/debate/${id}`)
+          }}
         />
       </div>
 
@@ -583,6 +668,13 @@ export default function DebatePage() {
 
         {/* Agent 状态栏 */}
         <AgentStatusBar agents={allAgents} phase={store.phase} />
+
+        {/* 切换被拦截的 Toast 提示 */}
+        {blockedReminder && (
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 z-50 mt-2 px-4 py-2 bg-marker-red/90 text-white text-sm rounded-full shadow-lg transition-all duration-300">
+            ⚠️ 正在生成决策，生成完成后才能查看其他历史记录
+          </div>
+        )}
 
         {/* 消息区域 */}
         <div className="flex-1 relative overflow-hidden">
@@ -617,6 +709,15 @@ export default function DebatePage() {
                   >
                     ✏️ 新建讨论
                   </HandDrawnButton>
+                </div>
+              )}
+
+              {/* 正在加载历史消息 */}
+              {loadingHistory && (
+                <div className="flex flex-col items-center justify-center py-12 gap-3">
+                  <span className="text-3xl animate-bounce">📡</span>
+                  <p className="text-ink-100 text-sm font-medium">正在加载讨论记录…</p>
+                  <p className="text-ink-50 text-xs">内容马上就好</p>
                 </div>
               )}
 

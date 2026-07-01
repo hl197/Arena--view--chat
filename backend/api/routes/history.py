@@ -1,8 +1,9 @@
 """历史辩论 API 路由"""
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from ..schemas import HistoryItem, HistoryListResponse
 from ...memory.debate_memory import DebateMemory
+from .user import get_current_user
 
 router = APIRouter(prefix="/api", tags=["history"])
 
@@ -18,13 +19,22 @@ def init_history_routes(_memory: DebateMemory, _db):
 
 
 @router.get("/history", response_model=HistoryListResponse)
-async def list_history(page: int = 1, page_size: int = 10):
-    """列出历史辩论——内存优先，降级 DB"""
-    # 从 DB 获取
-    items = db.list_debates(limit=page_size, offset=(page - 1) * page_size) if db else []
+async def list_history(request: Request, page: int = 1, page_size: int = 10):
+    """列出当前用户的历史辩论——必须登录"""
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="请先登录，登录后才能看历史记录")
 
-    # 合并内存中的记录
-    mem_items = list(memory._sessions.values())
+    user_id = user["id"]
+
+    # 从 DB 获取该用户的历史
+    items = db.list_debates(user_id=user_id, limit=page_size, offset=(page - 1) * page_size) if db else []
+
+    # 合并内存中的记录（也按用户过滤）
+    mem_items = [
+        r for r in memory._sessions.values()
+        if getattr(r, 'user_id', None) == user_id
+    ]
     mem_items.sort(key=lambda r: r.created_at, reverse=True)
 
     if not items:
@@ -90,24 +100,54 @@ def _format_debate_detail(record) -> dict:
 
 
 @router.get("/history/{session_id}")
-async def get_history_detail(session_id: str):
-    """获取历史辩论详情——内存优先，DB 降级"""
+async def get_history_detail(session_id: str, request: Request):
+    """获取历史辩论详情——需登录且为本人记录"""
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="请先登录")
+
+    user_id = user["id"]
+
     record = memory.get(session_id)
     if record:
+        if getattr(record, 'user_id', 'anonymous') != user_id:
+            raise HTTPException(status_code=404, detail="这条记录找不到了")
         return _format_debate_detail(record)
 
     # DB 降级
     if db:
         db_record = db.get_debate(session_id)
         if db_record:
+            if db_record.get("user_id", "anonymous") != user_id:
+                raise HTTPException(status_code=404, detail="这条记录找不到了")
             return _format_debate_detail(db_record)
 
-    raise HTTPException(status_code=404, detail="会话不存在")
+    raise HTTPException(status_code=404, detail="这条记录找不到了")
 
 
 @router.delete("/history/{session_id}")
-async def delete_history(session_id: str):
-    """删除历史辩论——同时删除内存和 DB 中的记录"""
+async def delete_history(session_id: str, request: Request):
+    """删除历史辩论——需登录且为本人记录"""
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="请先登录")
+
+    user_id = user["id"]
+
+    # 验证所有权——不存在的记录和别人的记录都返回 404
+    record = memory.get(session_id)
+    if record:
+        if getattr(record, 'user_id', 'anonymous') != user_id:
+            raise HTTPException(status_code=404, detail="这条记录找不到了")
+
+    db_record = db.get_debate(session_id) if db else None
+    if db_record and db_record.get("user_id", "anonymous") != user_id:
+        raise HTTPException(status_code=404, detail="这条记录找不到了")
+
+    # 记录不存在（内存和 DB 都没有）
+    if not record and not db_record:
+        raise HTTPException(status_code=404, detail="这条记录找不到了")
+
     import sys
     # 删除内存中的记录
     memory.delete(session_id)

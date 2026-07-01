@@ -10,7 +10,7 @@ import { useUIStore } from '../../store/uiStore'
 interface HistoryItem {
   session_id: string
   question: string
-  status: 'completed' | 'processing' | 'error'
+  status: 'completed' | 'processing' | 'running' | 'error'
   perspectives_count: number
   created_at: string
 }
@@ -18,6 +18,7 @@ interface HistoryItem {
 interface HistorySidebarProps {
   activeSessionId?: string
   onSelect?: (sessionId: string) => void
+  generating?: boolean  // 正在生成决策时禁用切换
 }
 
 function formatTime(isoStr: string): string {
@@ -55,7 +56,7 @@ function groupByTime(items: HistoryItem[]): { today: HistoryItem[]; yesterday: H
   return { today, yesterday, earlier }
 }
 
-export default function HistorySidebar({ activeSessionId, onSelect }: HistorySidebarProps) {
+export default function HistorySidebar({ activeSessionId, onSelect, generating }: HistorySidebarProps) {
   const navigate = useNavigate()
   const [history, setHistory] = useState<HistoryItem[]>([])
   const [search, setSearch] = useState('')
@@ -90,7 +91,6 @@ export default function HistorySidebar({ activeSessionId, onSelect }: HistorySid
 
   const handleSelect = (sessionId: string) => {
     onSelect?.(sessionId)
-    navigate(`/debate/${sessionId}`)
   }
 
   const handleNewChat = () => {
@@ -160,6 +160,7 @@ export default function HistorySidebar({ activeSessionId, onSelect }: HistorySid
           fullWidth
           tilt="right"
           onClick={handleNewChat}
+          disabled={generating}
         >
           ✏️ 新建讨论
         </HandDrawnButton>

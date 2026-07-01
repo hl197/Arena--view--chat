@@ -71,7 +71,25 @@ class Database:
 
                 CREATE INDEX IF NOT EXISTS idx_debates_user ON debates(user_id);
                 CREATE INDEX IF NOT EXISTS idx_debates_created ON debates(created_at);
+
+                CREATE TABLE IF NOT EXISTS verification_codes (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    email TEXT NOT NULL,
+                    code TEXT NOT NULL,
+                    purpose TEXT DEFAULT 'register',
+                    created_at REAL NOT NULL,
+                    expires_at REAL NOT NULL,
+                    used INTEGER DEFAULT 0,
+                    last_sent_at REAL DEFAULT 0
+                );
+                CREATE INDEX IF NOT EXISTS idx_vcode_email_purpose ON verification_codes(email, purpose);
             """)
+
+            # 迁移：给现有用户加 email_verified 列（SQLite 不支持 IF NOT EXISTS for ALTER TABLE）
+            try:
+                conn.execute("ALTER TABLE users ADD COLUMN email_verified INTEGER DEFAULT 1")
+            except Exception:
+                pass  # 列已存在
 
             # 确保匿名用户存在（JWT 认证未上线前的默认用户）
             conn.execute(
@@ -80,11 +98,12 @@ class Database:
             )
 
     # === User ===
-    def create_user(self, user_id: str, email: str, password_hash: str, tier: str = "registered") -> dict:
+    def create_user(self, user_id: str, email: str, password_hash: str, tier: str = "registered",
+                    email_verified: int = 0) -> dict:
         with self._get_conn() as conn:
             conn.execute(
-                "INSERT INTO users (id, email, password_hash, tier, created_at) VALUES (?, ?, ?, ?, ?)",
-                (user_id, email, password_hash, tier, time.time())
+                "INSERT INTO users (id, email, password_hash, tier, created_at, email_verified) VALUES (?, ?, ?, ?, ?, ?)",
+                (user_id, email, password_hash, tier, time.time(), email_verified)
             )
         return {"user_id": user_id, "email": email, "tier": tier}
 
@@ -128,8 +147,8 @@ class Database:
                 (user_id, tier, daily_limit, token_limit, time.strftime("%Y-%m-%d"))
             )
 
-    def increment_quota(self, user_id: str, tokens_used: int) -> bool:
-        """增加使用计数。返回 True 表示未超限"""
+    def increment_quota(self, user_id: str) -> bool:
+        """辩论次数 +1。返回 True 表示未超限，False 表示今日次数已用完。"""
         with self._get_conn() as conn:
             quota = dict(conn.execute("SELECT * FROM quotas WHERE user_id = ?", (user_id,)).fetchone())
             today = time.strftime("%Y-%m-%d")
@@ -145,14 +164,72 @@ class Database:
             # 检查限额
             if quota["daily_debates_used"] >= quota["daily_debates_limit"]:
                 return False
-            if quota["total_tokens_used"] + tokens_used > quota["total_tokens_limit"]:
-                return False
 
             conn.execute(
-                "UPDATE quotas SET daily_debates_used=daily_debates_used+1, total_tokens_used=total_tokens_used+? WHERE user_id=?",
-                (tokens_used, user_id)
+                "UPDATE quotas SET daily_debates_used=daily_debates_used+1 WHERE user_id=?",
+                (user_id,)
             )
             return True
+
+    # === Verification Codes ===
+    def save_verification_code(self, email: str, code: str, purpose: str = "register", ttl_minutes: int = 10):
+        """保存验证码，同时将同邮箱同用途的旧码标记为已使用"""
+        with self._get_conn() as conn:
+            now = time.time()
+            conn.execute(
+                "UPDATE verification_codes SET used=1 WHERE email=? AND purpose=? AND used=0",
+                (email, purpose)
+            )
+            conn.execute(
+                """INSERT INTO verification_codes (email, code, purpose, created_at, expires_at, last_sent_at)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (email, code, purpose, now, now + ttl_minutes * 60, now)
+            )
+
+    def verify_code(self, email: str, code: str, purpose: str = "register") -> bool:
+        """验证码校验——有效且匹配返回 True，同时标记为已使用"""
+        with self._get_conn() as conn:
+            row = conn.execute(
+                """SELECT * FROM verification_codes
+                   WHERE email=? AND code=? AND purpose=? AND used=0 AND expires_at > ?
+                   ORDER BY created_at DESC LIMIT 1""",
+                (email, code, purpose, time.time())
+            ).fetchone()
+            if not row:
+                return False
+            conn.execute(
+                "UPDATE verification_codes SET used=1 WHERE id=?",
+                (row["id"],)
+            )
+            return True
+
+    def get_pending_code(self, email: str, purpose: str = "register"):
+        """获取最新未使用、未过期的验证码（用于检查冷却时间）"""
+        with self._get_conn() as conn:
+            row = conn.execute(
+                """SELECT * FROM verification_codes
+                   WHERE email=? AND purpose=? AND used=0 AND expires_at > ?
+                   ORDER BY created_at DESC LIMIT 1""",
+                (email, purpose, time.time())
+            ).fetchone()
+            return dict(row) if row else None
+
+    def mark_user_verified(self, user_id: str):
+        """标记用户邮箱已验证"""
+        with self._get_conn() as conn:
+            conn.execute(
+                "UPDATE users SET email_verified=1 WHERE id=?",
+                (user_id,)
+            )
+
+    def is_email_verified(self, user_id: str) -> bool:
+        """检查用户邮箱是否已验证"""
+        with self._get_conn() as conn:
+            row = conn.execute(
+                "SELECT email_verified FROM users WHERE id=?",
+                (user_id,)
+            ).fetchone()
+            return bool(row["email_verified"]) if row else False
 
     # === Debates ===
     def save_debate(self, debate_data: dict):

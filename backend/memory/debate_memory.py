@@ -15,6 +15,7 @@ class SessionRecord:
     """单次辩论会话记录"""
     session_id: str
     question: str
+    user_id: str = "anonymous"
     user_options: list[str] = field(default_factory=list)
     perspectives: list[dict] = field(default_factory=list)
     arguments: dict[str, str] = field(default_factory=dict)

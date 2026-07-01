@@ -1,5 +1,5 @@
 /** 认证页 — 登录 / 注册 · 手绘手账风 */
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import HandDrawnCard from '../components/ui/HandDrawnCard'
@@ -11,7 +11,7 @@ type Tab = 'login' | 'register'
 
 export default function AuthPage() {
   const navigate = useNavigate()
-  const { login, register } = useAuthStore()
+  const { login, register, verify, resendCode } = useAuthStore()
   const [tab, setTab] = useState<Tab>('login')
 
   // 表单字段
@@ -19,10 +19,30 @@ export default function AuthPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
 
+  // 验证码步骤
+  const [step, setStep] = useState<'form' | 'verify'>('form')
+  const [registerEmail, setRegisterEmail] = useState('')
+  const [verificationCode, setVerificationCode] = useState('')
+  const [resendCooldown, setResendCooldown] = useState(0)
+  const cooldownRef = useRef<ReturnType<typeof setInterval>>()
+
   // 状态
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+
+  // 倒计时
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      cooldownRef.current = setInterval(() => {
+        setResendCooldown((c) => {
+          if (c <= 1) { clearInterval(cooldownRef.current); return 0 }
+          return c - 1
+        })
+      }, 1000)
+      return () => clearInterval(cooldownRef.current)
+    }
+  }, [resendCooldown])
 
   /** 切换 Tab 时清空表单和错误 */
   const switchTab = (t: Tab) => {
@@ -32,6 +52,9 @@ export default function AuthPage() {
     setEmail('')
     setPassword('')
     setConfirmPassword('')
+    setStep('form')
+    setRegisterEmail('')
+    setVerificationCode('')
   }
 
   /** 客户端校验 */
@@ -63,12 +86,13 @@ export default function AuthPage() {
       if (tab === 'login') {
         await login(email.trim(), password)
         setSuccess('登录成功，即将跳转...')
+        setTimeout(() => navigate('/'), 800)
       } else {
         await register(email.trim(), password)
-        setSuccess('注册成功，即将跳转...')
+        setRegisterEmail(email.trim())
+        setStep('verify')
+        setSuccess('验证码已发送，请查收邮件')
       }
-      // 延迟跳转，让用户看到成功提示
-      setTimeout(() => navigate('/'), 800)
     } catch (err) {
       setError(err instanceof Error ? err.message : '操作失败，请稍后重试')
     } finally {
@@ -76,6 +100,124 @@ export default function AuthPage() {
     }
   }
 
+  /** 验证邮箱 */
+  const handleVerify = async () => {
+    if (!/^\d{6}$/.test(verificationCode)) {
+      setError('请输入 6 位验证码')
+      return
+    }
+    setError('')
+    setSuccess('')
+    setLoading(true)
+    try {
+      await verify(registerEmail, verificationCode)
+      setSuccess('验证成功，即将跳转...')
+      setTimeout(() => navigate('/'), 800)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '验证失败')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  /** 重发验证码 */
+  const handleResend = async () => {
+    if (resendCooldown > 0) return
+    setError('')
+    setLoading(true)
+    try {
+      await resendCode(registerEmail)
+      setSuccess('验证码已重新发送')
+      setResendCooldown(60)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '发送失败')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // === 验证码步骤 ===
+  if (step === 'verify') {
+    return (
+      <div className="min-h-screen paper-bg">
+        <div className="max-w-md mx-auto pt-16 pb-12 px-4">
+          <div className="text-center mb-8">
+            <span className="text-4xl mb-3 block">📬</span>
+            <h1 className="text-2xl font-bold text-ink-300 font-hand">验证邮箱</h1>
+            <p className="text-ink-50 text-sm mt-1">
+              验证码已发送至 <strong className="text-ink-200">{registerEmail}</strong>
+            </p>
+          </div>
+
+          <HandDrawnCard variant="white" className="p-6">
+            <div className="space-y-4">
+              <HandDrawnInput
+                label="验证码"
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                value={verificationCode}
+                onChange={(e) => setVerificationCode(e.target.value.replace(/[^0-9]/g, ''))}
+                placeholder="请输入 6 位验证码"
+                variant="filled"
+                autoFocus
+              />
+
+              {error && (
+                <div className="bg-marker-red/10 border-2 border-marker-red/40 rounded-hd-md p-3 text-marker-red text-sm hd-filter">
+                  ⚠️ {error}
+                </div>
+              )}
+
+              {success && (
+                <div className="bg-marker-green/15 border-2 border-marker-green/40 rounded-hd-md p-3 text-marker-green text-sm hd-filter">
+                  ✅ {success}
+                </div>
+              )}
+
+              <HandDrawnButton
+                onClick={handleVerify}
+                variant="primary"
+                size="lg"
+                fullWidth
+                tilt="right"
+                disabled={loading}
+              >
+                {loading ? '验证中...' : '✅ 验证'}
+              </HandDrawnButton>
+
+              <HandDrawnDivider variant="dashed" />
+
+              <div className="text-center">
+                <button
+                  onClick={handleResend}
+                  disabled={resendCooldown > 0 || loading}
+                  className={`text-sm font-medium transition-colors ${
+                    resendCooldown > 0
+                      ? 'text-ink-30 cursor-not-allowed'
+                      : 'text-marker-blue hover:underline'
+                  }`}
+                >
+                  {resendCooldown > 0 ? `重新发送（${resendCooldown}s）` : '📧 重新发送验证码'}
+                </button>
+              </div>
+
+              <p className="text-center text-xs text-ink-50">
+                <button
+                  onClick={() => { setStep('form'); setRegisterEmail(''); setVerificationCode('') }}
+                  className="text-ink-50 hover:text-ink-200 hover:underline transition-colors"
+                >
+                  ← 返回修改邮箱
+                </button>
+              </p>
+            </div>
+          </HandDrawnCard>
+        </div>
+      </div>
+    )
+  }
+
+  // === 登录/注册表单 ===
   return (
     <div className="min-h-screen paper-bg">
       <div className="max-w-md mx-auto pt-16 pb-12 px-4">

@@ -53,7 +53,7 @@ export default function HandDrawnBadge({
       `}
     >
       {dot && (
-        <span className={`w-1.5 h-1.5 rounded-full ${dotColors[variant]} ${variant === 'success' ? 'animate-pulse' : ''}`} />
+        <span className={`w-1.5 h-1.5 rounded-full ${dotColors[variant]} ${(variant === 'success' || variant === 'warning') ? 'animate-pulse' : ''}`} />
       )}
       {children}
     </span>

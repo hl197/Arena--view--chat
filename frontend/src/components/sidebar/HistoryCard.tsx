@@ -5,7 +5,7 @@ import HandDrawnBadge from '../ui/HandDrawnBadge'
 interface HistoryCardProps {
   sessionId: string
   title: string
-  status: 'completed' | 'processing' | 'error'
+  status: 'completed' | 'processing' | 'running' | 'error'
   perspectivesCount: number
   timeLabel: string
   active?: boolean
@@ -30,6 +30,7 @@ export default function HistoryCard({
   const statusMap = {
     completed: { variant: 'success' as const, dot: true, label: '已完成' },
     processing: { variant: 'warning' as const, dot: true, label: '进行中' },
+    running: { variant: 'warning' as const, dot: true, label: '进行中' },
     error: { variant: 'danger' as const, dot: false, label: '出错' },
   }
 

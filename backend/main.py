@@ -43,7 +43,7 @@ def _ensure_master_key():
 
 
 def _decrypt_env_api_keys():
-    """解密所有 *_API_KEY_ENC 环境变量并注入 *_API_KEY"""
+    """解密所有 *_ENC 环境变量并注入对应的明文变量"""
     master_key = os.getenv("ARENA_MASTER_KEY")
     if not master_key:
         return
@@ -53,14 +53,13 @@ def _decrypt_env_api_keys():
     f = Fernet(fernet_key)
 
     for env_key in list(os.environ.keys()):
-        if not env_key.endswith("_API_KEY_ENC"):
+        if not env_key.endswith("_ENC"):
             continue
 
-        target_key = env_key[:-4]  # 去掉 _ENC 后缀，得到 XXX_API_KEY
+        target_key = env_key[:-4]  # 去掉 _ENC 后缀
 
         # 明文优先
         if os.getenv(target_key):
-            print(f"ℹ️  同时检测到 {target_key} 和 {env_key}，使用明文版本")
             continue
 
         try:
@@ -88,6 +87,7 @@ from .memory.debate_memory import DebateMemory
 from .db.database import Database
 from .services.auth_service import AuthService
 from .services.crypto_service import CryptoService
+from .services.email_service import EmailService
 from .api.middleware import setup_cors
 from .api.routes import debate, user, history
 
@@ -97,6 +97,7 @@ config = ArenaConfig()
 db = Database(db_path=os.getenv("DATABASE_URL", "arena.db").replace("sqlite:///", ""))
 auth_service = AuthService(secret_key=os.getenv("ARENA_SECRET_KEY"))
 crypto_service = CryptoService(master_key=os.getenv("ARENA_MASTER_KEY"))
+email_service = EmailService(config)  # SMTP 邮件验证码
 memory = DebateMemory()
 sse_manager = SSEManager()
 
@@ -137,7 +138,7 @@ async def api_health_check():
 # 初始化路由（注入全局服务）
 debate.init_debate_routes(engine, memory, sse_manager, db)
 history.init_history_routes(memory, db)
-user.init_user_routes(auth_service, crypto_service, db)
+user.init_user_routes(auth_service, crypto_service, db, email_service)
 
 # 注册路由
 app.include_router(debate.router)
@@ -148,12 +149,12 @@ app.include_router(history.router)
 # === 错误处理 ===
 @app.exception_handler(404)
 async def not_found(request, exc):
-    return JSONResponse(status_code=404, content={"code": "NOT_FOUND", "message": "路径不存在"})
+    return JSONResponse(status_code=404, content={"code": "NOT_FOUND", "message": "页面找不到了，检查一下地址？"})
 
 
 @app.exception_handler(500)
 async def internal_error(request, exc):
-    return JSONResponse(status_code=500, content={"code": "INTERNAL_ERROR", "message": "服务器内部错误"})
+    return JSONResponse(status_code=500, content={"code": "INTERNAL_ERROR", "message": "服务器出了点问题，稍后再试吧"})
 
 
 # === 基础端点 ===

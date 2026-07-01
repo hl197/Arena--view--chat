@@ -109,6 +109,10 @@ export const useDebateStore = create<DebateState>((set, get) => ({
   setStatus: (status) => set({ status }),
   addPerspective: (p) =>
     set((s) => {
+      // 幂等：已存在则跳过
+      if (s.perspectives.some(existing => existing.id === p.id)) {
+        return {}
+      }
       const newPerspectives = [...s.perspectives, p]
       // 同步更新 agentStates
       const agentStates: AgentStateItem[] = newPerspectives.map((persp) => {

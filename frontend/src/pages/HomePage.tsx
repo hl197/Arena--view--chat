@@ -44,7 +44,7 @@ export default function HomePage() {
           .map((o) => o.trim())
           .filter(Boolean),
         num_perspectives: 5,
-        debate_rounds: 2,
+        debate_rounds: 3,
       })
 
       setSessionId(res.session_id)

@@ -74,6 +74,33 @@ class LLMConfigUpdate(BaseModel):
     base_url: str = ""
 
 
+# === 邮箱验证码相关 ===
+class VerifyCodeRequest(BaseModel):
+    email: str = Field(..., max_length=255)
+    code: str = Field(..., pattern=r"^\d{6}$")
+
+
+class ResendCodeRequest(BaseModel):
+    email: str = Field(..., max_length=255)
+
+
+class RegisterResponse(BaseModel):
+    """注册第一步响应——不含 token，需要验证"""
+    user_id: str
+    email: str
+    message: str = "验证码已发送，请查收邮件"
+    requires_verification: bool = True
+
+
+class VerifyResponse(BaseModel):
+    """验证成功后响应——含 token"""
+    user_id: str
+    email: str
+    tier: str
+    token: str
+    message: str = "验证成功"
+
+
 # === 历史相关 ===
 class HistoryItem(BaseModel):
     session_id: str

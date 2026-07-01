@@ -20,15 +20,15 @@ class ArenaConfig:
 
     # === 免费额度 ===
     guest_daily_limit: int = 3       # 游客每日辩论次数
-    guest_max_perspectives: int = 4   # 游客最大视角数
-    guest_debate_rounds: int = 1     # 游客辩论轮次
+    guest_max_perspectives: int = 5   # 最大视角数（所有等级统一）
+    guest_debate_rounds: int = 3     # 辩论轮次（所有等级统一 3 轮）
 
     registered_daily_limit: int = 5
     registered_max_perspectives: int = 5
-    registered_debate_rounds: int = 2
+    registered_debate_rounds: int = 3
 
     pro_daily_limit: int = 20
-    pro_max_perspectives: int = 6
+    pro_max_perspectives: int = 5
     pro_debate_rounds: int = 3
 
     # === Agent 执行 ===
@@ -67,6 +67,15 @@ class ArenaConfig:
     # === 流式 ===
     stream_enabled: bool = True
     heartbeat_interval: int = 15          # SSE 心跳间隔（秒）
+
+    # === SMTP 邮件验证码 ===
+    smtp_host: str = field(default_factory=lambda: os.getenv("SMTP_HOST", "smtp.qq.com"))
+    smtp_port: int = field(default_factory=lambda: int(os.getenv("SMTP_PORT", "587")))
+    smtp_username: str = field(default_factory=lambda: os.getenv("SMTP_USERNAME", ""))
+    smtp_password: str = field(default_factory=lambda: os.getenv("SMTP_PASSWORD", ""))
+    smtp_from_name: str = field(default_factory=lambda: os.getenv("SMTP_FROM_NAME", "ArenaView"))
+    verification_code_ttl_minutes: int = 10
+    verification_resend_cooldown_seconds: int = 60
 
     # === 部署 ===
     debug: bool = False

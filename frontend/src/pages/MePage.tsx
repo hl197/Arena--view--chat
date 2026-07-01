@@ -17,18 +17,14 @@ interface QuotaInfo {
   api_key_configured: boolean
 }
 
-/** 各套餐配置（与后端 config.py / init_quota 保持一致） */
-const TIER_CONFIG: Record<string, { label: string; color: string; perspectives: number; rounds: number }> = {
-  guest:      { label: '游客',   color: '#9ca3af', perspectives: 4, rounds: 1 },
-  registered: { label: '已注册', color: '#3b82f6', perspectives: 5, rounds: 2 },
-  pro:        { label: '专业版', color: '#f59e0b', perspectives: 6, rounds: 3 },
+/** 各套餐配置（最大视角数统一，仅次数不同） */
+const TIER_CONFIG: Record<string, { label: string; color: string; rounds: number }> = {
+  guest:      { label: '游客',   color: '#9ca3af', rounds: 3 },
+  registered: { label: '已注册', color: '#3b82f6', rounds: 3 },
+  pro:        { label: '专业版', color: '#f59e0b', rounds: 3 },
 }
 
-function fmtTokens(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
-  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`
-  return String(n)
-}
+const MAX_PERSPECTIVES = 5  // 所有等级统一
 
 /** 进度条：已用量 / 限额，无限额时显示 "无上限" */
 function QuotaBar({ used, limit, label, suffix, unlimited }: { used: number; limit: number; label: string; suffix?: string; unlimited?: boolean }) {
@@ -221,26 +217,16 @@ export default function MePage() {
                       label="今日辩论次数"
                       unlimited={quota.api_key_configured}
                     />
-                    <QuotaBar
-                      used={quota.total_tokens_used}
-                      limit={quota.total_tokens_limit}
-                      label="Token 用量"
-                      unlimited={quota.api_key_configured}
-                    />
                   </div>
                   <HandDrawnDivider variant="dashed" />
                   <div className="flex gap-3 text-xs text-ink-100">
                     <div className="flex-1 bg-paper-100 rounded-hd-sm p-2.5 text-center border border-divider/50">
                       <div className="text-ink-50 mb-0.5">最大视角</div>
-                      <div className="font-bold text-ink-300">{quota.api_key_configured ? '∞' : `${tierCfg.perspectives} 个`}</div>
+                      <div className="font-bold text-ink-300">{quota.api_key_configured ? '∞' : `${MAX_PERSPECTIVES} 个`}</div>
                     </div>
                     <div className="flex-1 bg-paper-100 rounded-hd-sm p-2.5 text-center border border-divider/50">
                       <div className="text-ink-50 mb-0.5">辩论轮次</div>
                       <div className="font-bold text-ink-300">{quota.api_key_configured ? '∞' : `${tierCfg.rounds} 轮`}</div>
-                    </div>
-                    <div className="flex-1 bg-paper-100 rounded-hd-sm p-2.5 text-center border border-divider/50">
-                      <div className="text-ink-50 mb-0.5">Token 上限</div>
-                      <div className="font-bold text-ink-300">{quota.api_key_configured ? '∞' : fmtTokens(quota.total_tokens_limit)}</div>
                     </div>
                   </div>
                 </>
