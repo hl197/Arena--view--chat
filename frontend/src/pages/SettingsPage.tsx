@@ -73,7 +73,7 @@ export default function SettingsPage() {
           <div>
             <div className="text-sm text-ink-50 mb-1">当前使用</div>
             <div className="text-lg font-semibold text-ink-300">
-              {config?.configured ? config.model_display : 'Gemini 2.0 Flash（免费默认）'}
+              {config?.configured ? config.model_display : 'DeepSeek（免费默认）'}
             </div>
           </div>
           <HandDrawnBadge variant={config?.configured ? 'success' : 'info'} dot size="md">
